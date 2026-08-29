@@ -1,0 +1,255 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { calculateEconomics, referenceEconomicsScenario } from '../lib/economics';
+
+const reference = calculateEconomics(referenceEconomicsScenario);
+
+function formatAud(value: number): string {
+  return new Intl.NumberFormat('en-AU', {
+    style: 'currency',
+    currency: 'AUD',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+---
+
+<BaseLayout title="Economics laboratory" description="Interactive annual scenario model for distributed inference economics." wide>
+<div class="economics-shell">
+  <header class="economics-header">
+    <p class="eyebrow">Scenario laboratory</p>
+    <h1>Inference economics</h1>
+    <p>
+      Explore a scenario, not a forecast. The model compounds the availability,
+      demand, scheduling and completion assumptions behind each billable GPU-hour.
+    </p>
+  </header>
+
+  <noscript>
+    <p class="notice">JavaScript is needed to recalculate this scenario. The reference case is shown below.</p>
+  </noscript>
+
+  <form id="economics-form" class="economics-form">
+    <fieldset>
+      <legend>Capacity and revenue</legend>
+      <label>Sellable GPUs <input name="installedSellableGpus" type="number" min="0" step="1" value="500" /></label>
+      <label>Price per GPU-hour (A$) <input name="realisedPricePerGpuHour" type="number" min="0" step="0.01" value="6.50" /></label>
+      <label>Facility draw (MW) <input name="facilityMw" type="number" min="0" step="0.01" value="1" /></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Billable-utilisation waterfall</legend>
+      <label>Power availability <input name="powerAvailability" type="number" min="0" max="100" step="0.1" value="80" /><span>%</span></label>
+      <label>Hardware availability <input name="hardwareAvailability" type="number" min="0" max="100" step="0.1" value="95" /><span>%</span></label>
+      <label>Demand occupancy <input name="demandOccupancy" type="number" min="0" max="100" step="0.1" value="70" /><span>%</span></label>
+      <label>Scheduling efficiency <input name="schedulingEfficiency" type="number" min="0" max="100" step="0.1" value="100" /><span>%</span></label>
+      <label>Successful completion <input name="successfulCompletionRate" type="number" min="0" max="100" step="0.1" value="95" /><span>%</span></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Power and operating costs</legend>
+      <label>Delivered electricity (A$/MWh) <input name="deliveredElectricityPricePerMwh" type="number" min="0" step="1" value="20" /></label>
+      <label>Central-site electricity (A$/MWh) <input name="centralElectricityPricePerMwh" type="number" min="0" step="1" value="70" /></label>
+      <label>Annual firm-overflow cost (A$) <input name="annualFirmOverflowCost" type="number" min="0" step="1000" value="0" /></label>
+      <label>Site capex (A$) <input name="siteCapex" type="number" min="0" step="10000" value="1000000" /></label>
+      <label>Annual site operating cost (A$) <input name="siteOperatingCost" type="number" min="0" step="10000" value="500000" /></label>
+      <label>Accelerator capex per GPU (A$) <input name="acceleratorCapexPerGpu" type="number" min="0" step="1000" value="50000" /></label>
+      <label>Accelerator useful life (years) <input name="acceleratorUsefulLifeYears" type="number" min="0.1" step="0.1" value="4" /></label>
+    </fieldset>
+
+    <button type="reset">Restore reference case</button>
+  </form>
+
+  <section class="economics-results" aria-labelledby="results-heading" aria-live="polite">
+    <div>
+      <p class="eyebrow">Live scenario</p>
+      <h2 id="results-heading">Annual output</h2>
+    </div>
+    <dl id="economics-results">
+      <div><dt>Billable utilisation</dt><dd data-result-value>{(reference.billableUtilisation * 100).toFixed(1)}%</dd></div>
+      <div><dt>Revenue</dt><dd data-result-value>{formatAud(reference.revenue)}</dd></div>
+      <div><dt>Electricity cost</dt><dd data-result-value>{formatAud(reference.electricityCost)}</dd></div>
+      <div><dt>Power-price advantage</dt><dd data-result-value>{formatAud(reference.annualPowerSavings)}</dd></div>
+      <div><dt>Accelerator depreciation</dt><dd data-result-value>{formatAud(reference.acceleratorDepreciation)}</dd></div>
+      <div><dt>Gross contribution before financing</dt><dd data-result-value>{formatAud(reference.grossContributionBeforeFinancing)}</dd></div>
+      <div><dt>Value of one utilisation point</dt><dd data-result-value>{formatAud(reference.revenuePerUtilisationPoint)}</dd></div>
+      <div><dt>Break-even utilisation loss</dt><dd data-result-value>{reference.breakEvenUtilisationLossPoints?.toFixed(2)} points</dd></div>
+      <div><dt>Upfront site and accelerator capex</dt><dd data-result-value>{formatAud(reference.totalUpfrontCapex)}</dd></div>
+    </dl>
+    <p id="scenario-error" class="notice" role="alert" hidden></p>
+    <p class="model-note">Power-price advantage compares available facility energy at the two electricity prices, then deducts annual firm overflow. Site capex is reported as upfront investment and excluded from annual gross contribution.</p>
+  </section>
+
+  <section class="economics-visuals" aria-label="Scenario reasoning visuals">
+    <figure>
+      <h2>Billable-utilisation waterfall</h2>
+      <svg id="waterfall-chart" viewBox="0 0 640 270" role="img" aria-labelledby="waterfall-title waterfall-description">
+        <title id="waterfall-title">Billable utilisation waterfall</title>
+        <desc id="waterfall-description">Each stage narrows the theoretical capacity left to bill.</desc>
+        <g class="waterfall-grid" aria-hidden="true">
+          <path d="M180 18V242 M360 18V242 M540 18V242" />
+        </g>
+        <g class="waterfall-bars">
+          <rect data-waterfall-bar="0" x="0" y="24" width="432" height="24" /><text data-waterfall-value="0" x="440" y="42">80.0%</text>
+          <rect data-waterfall-bar="1" x="0" y="67" width="410.4" height="24" /><text data-waterfall-value="1" x="418.4" y="85">76.0%</text>
+          <rect data-waterfall-bar="2" x="0" y="110" width="287.28" height="24" /><text data-waterfall-value="2" x="295.28" y="128">53.2%</text>
+          <rect data-waterfall-bar="3" x="0" y="153" width="287.28" height="24" /><text data-waterfall-value="3" x="295.28" y="171">53.2%</text>
+          <rect data-waterfall-bar="4" x="0" y="196" width="272.916" height="24" /><text data-waterfall-value="4" x="280.916" y="214">50.5%</text>
+        </g>
+        <g class="waterfall-labels" aria-hidden="true">
+          <text x="0" y="19">After power</text><text x="0" y="62">After hardware</text><text x="0" y="105">After demand</text><text x="0" y="148">After scheduling</text><text x="0" y="191">Accepted work</text>
+          <text x="0" y="258">0%</text><text x="174" y="258">35%</text><text x="354" y="258">70%</text><text x="534" y="258">100%</text>
+        </g>
+      </svg>
+      <figcaption>Capacity remaining after each stage. Text values are provided below for every stage.</figcaption>
+      <ol id="waterfall-list" class="visual-values">
+        <li>After power availability: 80.0%</li>
+        <li>After hardware availability: 76.0%</li>
+        <li>After demand occupancy: 53.2%</li>
+        <li>After scheduling efficiency: 53.2%</li>
+        <li>After successful completion: 50.5%</li>
+      </ol>
+    </figure>
+
+    <figure>
+      <h2>Power advantage and tolerable utilisation loss</h2>
+      <svg id="advantage-chart" viewBox="0 0 640 156" role="img" aria-labelledby="advantage-title advantage-description">
+        <title id="advantage-title">Power-price advantage versus utilisation loss</title>
+        <desc id="advantage-description">The power-cost advantage is converted into the number of billable utilisation points it can offset.</desc>
+        <path class="advantage-axis" d="M36 82H604" />
+        <path id="advantage-marker" d="M176 55V108" />
+        <circle id="advantage-dot" cx="176" cy="82" r="7" />
+        <text id="advantage-point-label" x="176" y="42" text-anchor="middle">1.23 points</text>
+        <text x="36" y="126">0 points</text><text x="604" y="126" text-anchor="end">5 points</text>
+      </svg>
+      <figcaption id="advantage-summary">A$350,400 annual power advantage supports 1.23 billable-utilisation points of loss before other differences.</figcaption>
+      <p class="visual-values" id="advantage-detail">One utilisation point is worth A$284,700 in this scenario.</p>
+    </figure>
+  </section>
+</div>
+</BaseLayout>
+
+<script>
+  import { calculateEconomics, type EconomicsResults, type EconomicsScenario } from '../lib/economics';
+
+  const form = document.querySelector('#economics-form');
+  const output = document.querySelector('#economics-results');
+  const resultValues = Array.from(document.querySelectorAll<HTMLElement>('[data-result-value]'));
+  const scenarioError = document.querySelector<HTMLElement>('#scenario-error');
+  const aud = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 });
+  const percentFields = new Set([
+    'powerAvailability', 'hardwareAvailability', 'demandOccupancy', 'schedulingEfficiency', 'successfulCompletionRate',
+  ]);
+
+  const cells: Array<[string, (results: EconomicsResults) => string]> = [
+    ['Billable utilisation', (r) => `${(r.billableUtilisation * 100).toFixed(1)}%`],
+    ['Revenue', (r) => aud.format(r.revenue)],
+    ['Electricity cost', (r) => aud.format(r.electricityCost)],
+    ['Power-price advantage', (r) => aud.format(r.annualPowerSavings)],
+    ['Accelerator depreciation', (r) => aud.format(r.acceleratorDepreciation)],
+    ['Gross contribution before financing', (r) => aud.format(r.grossContributionBeforeFinancing)],
+    ['Value of one utilisation point', (r) => aud.format(r.revenuePerUtilisationPoint)],
+    ['Break-even utilisation loss', (r) => r.breakEvenUtilisationLossPoints === null ? 'Not defined' : `${r.breakEvenUtilisationLossPoints.toFixed(2)} points`],
+    ['Upfront site and accelerator capex', (r) => aud.format(r.totalUpfrontCapex)],
+  ];
+
+  function updateVisuals(scenario: EconomicsScenario, results: EconomicsResults) {
+    const cumulativeStages = [
+      scenario.powerAvailability,
+      scenario.powerAvailability * scenario.hardwareAvailability,
+      scenario.powerAvailability * scenario.hardwareAvailability * scenario.demandOccupancy,
+      scenario.powerAvailability * scenario.hardwareAvailability * scenario.demandOccupancy * scenario.schedulingEfficiency,
+      results.billableUtilisation,
+    ];
+    document.querySelectorAll<SVGRectElement>('[data-waterfall-bar]').forEach((bar, index) => {
+      bar.setAttribute('width', String(cumulativeStages[index] * 540));
+    });
+    document.querySelectorAll<SVGTextElement>('[data-waterfall-value]').forEach((value, index) => {
+      const percentage = cumulativeStages[index] * 100;
+      value.textContent = `${percentage.toFixed(1)}%`;
+      value.setAttribute('x', String(Math.min(cumulativeStages[index] * 540 + 8, 580)));
+    });
+    const waterfallList = document.querySelector('#waterfall-list');
+    if (waterfallList) {
+      waterfallList.innerHTML = [
+        ['After power availability', cumulativeStages[0]], ['After hardware availability', cumulativeStages[1]],
+        ['After demand occupancy', cumulativeStages[2]], ['After scheduling efficiency', cumulativeStages[3]],
+        ['After successful completion', cumulativeStages[4]],
+      ].map(([label, value]) => `<li>${label}: ${(Number(value) * 100).toFixed(1)}%</li>`).join('');
+    }
+
+    const points = results.breakEvenUtilisationLossPoints;
+    const markerPosition = 36 + Math.max(0, Math.min(points ?? 0, 5)) / 5 * 568;
+    document.querySelector('#advantage-marker')?.setAttribute('d', `M${markerPosition} 55V108`);
+    document.querySelector('#advantage-dot')?.setAttribute('cx', String(markerPosition));
+    const pointLabel = document.querySelector('#advantage-point-label');
+    if (pointLabel) {
+      pointLabel.setAttribute('x', String(markerPosition));
+      pointLabel.textContent = points === null ? 'Not defined' : `${points.toFixed(2)} points`;
+    }
+    const summary = document.querySelector('#advantage-summary');
+    if (summary) summary.textContent = `${aud.format(results.annualPowerSavings)} annual power advantage supports ${points === null ? 'no defined' : points.toFixed(2)} billable-utilisation points of loss before other differences.`;
+    const detail = document.querySelector('#advantage-detail');
+    if (detail) detail.textContent = `One utilisation point is worth ${aud.format(results.revenuePerUtilisationPoint)} in this scenario.`;
+  }
+
+  function update() {
+    if (!(form instanceof HTMLFormElement) || !output) return;
+    const values = Object.fromEntries(new FormData(form).entries());
+    const scenario = Object.fromEntries(Object.entries(values).map(([key, value]) => {
+      const numeric = Number(value);
+      return [key, percentFields.has(key) ? numeric / 100 : numeric];
+    })) as unknown as EconomicsScenario;
+
+    try {
+      const results = calculateEconomics(scenario);
+      cells.forEach(([, render], index) => {
+        const value = resultValues[index];
+        if (value) value.textContent = render(results);
+      });
+      if (scenarioError) scenarioError.hidden = true;
+      updateVisuals(scenario, results);
+    } catch (error) {
+      if (scenarioError) {
+        scenarioError.textContent = error instanceof Error ? error.message : 'Check the inputs.';
+        scenarioError.hidden = false;
+      }
+    }
+  }
+
+  if (form instanceof HTMLFormElement) {
+    form.addEventListener('input', update);
+    form.addEventListener('reset', () => window.setTimeout(update));
+    update();
+  }
+</script>
+
+<style>
+  .economics-shell { max-width: 76rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+  .economics-header { max-width: 46rem; margin-bottom: 2.5rem; }
+  .eyebrow { margin: 0 0 .5rem; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .economics-form { display: grid; gap: 1rem; }
+  fieldset { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1rem; border: 1px solid currentColor; padding: 1.25rem; }
+  legend { font-weight: 700; padding: 0 .35rem; }
+  label { display: grid; gap: .35rem; font-size: .93rem; }
+  label span { justify-self: end; margin-top: -2.1rem; margin-right: .6rem; pointer-events: none; }
+  input { box-sizing: border-box; width: 100%; min-height: 2.5rem; padding: .4rem .6rem; font: inherit; }
+  button { justify-self: start; padding: .65rem 1rem; font: inherit; }
+  .economics-results { margin-top: 2rem; }
+  dl { background: var(--line); display: grid; gap: 1px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 1rem 0; }
+  dl div { background: var(--bg); color: var(--ink); padding: 1rem; }
+  dt { font-size: .9rem; }
+  dd { margin: .35rem 0 0; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+  .model-note, .notice { max-width: 52rem; font-size: .92rem; }
+  .economics-visuals { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 2rem; margin-top: 3rem; }
+  figure { margin: 0; }
+  figure h2 { margin-bottom: .5rem; font-size: 1.1rem; }
+  svg { display: block; width: 100%; height: auto; border: 1px solid currentColor; }
+  .waterfall-grid path, .advantage-axis { fill: none; stroke: currentColor; stroke-opacity: .25; }
+  .waterfall-bars rect { fill: currentColor; fill-opacity: .72; }
+  .waterfall-bars text, .waterfall-labels text, #advantage-point-label { fill: currentColor; font-size: 14px; }
+  #advantage-marker { stroke: currentColor; stroke-width: 2; }
+  #advantage-dot { fill: currentColor; }
+  figcaption { margin-top: .75rem; font-size: .92rem; }
+  .visual-values { padding-left: 1.25rem; font-size: .92rem; }
+  @media (max-width: 760px) { dl { grid-template-columns: 1fr; } }
+</style>

@@ -1,0 +1,18 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Frame from "../components/Frame.astro";
+import PageHeader from "../components/PageHeader.astro";
+import RecordList from "../components/RecordList.astro";
+import { type ResearchRecord } from "../lib/content";
+const queue = (await getCollection("researchQueue")) as unknown as ResearchRecord[];
+const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 } as Record<string, number>;
+const ordered = [...queue].sort((a, b) => (priorityOrder[String(a.data.priority)] ?? 9) - (priorityOrder[String(b.data.priority)] ?? 9));
+const critical = ordered.filter((record) => record.data.priority === "critical");
+---
+<BaseLayout title="Research queue">
+  <PageHeader eyebrow="Research queue" title={'Prioritise questions that can <span class="marker">change a deployment decision</span>.'} lede="The immediate work is not a broad market study. It is customer demand, site-specific power, usable five-minute energy, fibre, and accelerator procurement economics." meta={`${queue.length} queued questions`} />
+  <div class="dashboard-grid"><Frame ticks={true}><div class="frame__body"><p class="mono-label">Critical questions</p><RecordList records={critical} tagField="priority" empty="No critical questions are marked. The queue needs a ranked first decision." /></div></Frame><Frame tinted={true}><div class="frame__body"><p class="mono-label">Research discipline</p><p>Every question should say why it matters, its next action, and what result would change the thesis, economics or deployment plan.</p><p class="notice">Do not substitute a generic source for site-specific or customer-specific evidence where those are the decision gates.</p></div></Frame></div>
+  <div class="section-heading"><h2>All research actions</h2><span>Ordered by priority</span></div>
+  <Frame><div class="frame__body"><RecordList records={ordered} tagField="priority" empty="No research actions have been added." /></div></Frame>
+</BaseLayout>

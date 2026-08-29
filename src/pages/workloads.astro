@@ -1,0 +1,24 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CollectionTable from "../components/CollectionTable.astro";
+import Frame from "../components/Frame.astro";
+import PageHeader from "../components/PageHeader.astro";
+import { type ResearchRecord } from "../lib/content";
+const workloads = (await getCollection("workloads")) as unknown as ResearchRecord[];
+const rows = [
+  ["Evaluations, synthetic data, rollouts", "Strong", "Checkpointable batches", "Flex / deadline"],
+  ["Embeddings and document processing", "Strong", "Record or chunk boundary", "Flex / deadline"],
+  ["Long-running research and coding agents", "Good", "Durable workflow state", "Deadline"],
+  ["Interactive chat", "Limited", "Firm reserve or overflow", "Firm"],
+  ["Cross-site training or serving", "Poor", "WAN coupling defeats the benefit", "Concentrated fabric"]
+];
+---
+<BaseLayout title="Workloads">
+  <PageHeader eyebrow="Workloads and customers" title={'The product is a completion window, not an <span class="marker">undifferentiated GPU-hour</span>.'} lede="Customer work must be restartable at a natural checkpoint, commercial terms must match its tolerance, and firm service needs independent reserve capacity." meta={`${workloads.length} workload records`} />
+  <Frame><div class="frame__body"><p class="mono-label">Commercial tension</p><p class="lede">Flexible work is often globally mobile and price-sensitive. Australian jurisdiction, private inference and customer-managed controls may support firmer service, but should never be assumed to remove the need for reliability.</p></div></Frame>
+  <div class="section-heading"><h2>Fit matrix</h2><span>Initial framing, not a score</span></div>
+  <div class="frame table-wrap"><div class="matrix"><div>Workload class</div><div>Flexibility</div><div>Recovery boundary</div><div>Service fit</div>{rows.flatMap((row) => row.map((cell) => <div>{cell}</div>))}</div></div>
+  <div class="section-heading"><h2>Workload register</h2><span>Customer evidence first</span></div>
+  <CollectionTable records={workloads} columns={[{ label: "Workload", field: "title" }, { label: "Fit", field: "fit" }, { label: "Interruption behaviour", field: "interruption_behavior" }, { label: "Service class", field: "service_classes" }]} empty="No workload records exist. Add observed customer constraints rather than generic cloud personas." />
+</BaseLayout>

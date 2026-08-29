@@ -1,0 +1,19 @@
+{
+  "name": "distributed-inference-research-cockpit",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 astro check && ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "check": "ASTRO_TELEMETRY_DISABLED=1 astro check",
+    "validate:content": "node scripts/validate-content.mjs",
+    "test": "node --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@types/node": "^22.0.0",
+    "astro": "^7.2.9",
+    "typescript": "^5.9.2"
+  }
+}

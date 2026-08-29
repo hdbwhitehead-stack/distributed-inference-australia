@@ -1,0 +1,16 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CollectionTable from "../components/CollectionTable.astro";
+import PageHeader from "../components/PageHeader.astro";
+import { sortByRecent, type ResearchRecord } from "../lib/content";
+const assumptions = (await getCollection("assumptions")) as unknown as ResearchRecord[];
+const decisions = sortByRecent((await getCollection("decisions")) as unknown as ResearchRecord[]);
+---
+<BaseLayout title="Assumptions and decisions" wide={true}>
+  <PageHeader eyebrow="Registers" title={'Keep the discarded paths visible; they explain <span class="marker">why the current view changed</span>.'} lede="An assumption is not evidence. A decision is not permanent. Both must retain ownership, review conditions and dates." meta={`${assumptions.length} assumptions · ${decisions.length} decisions`} />
+  <div class="section-heading"><h2>Assumption register</h2><span>Open, validated, rejected and superseded</span></div>
+  <CollectionTable records={assumptions} columns={[{ label: "Assumption", field: "statement" }, { label: "Category", field: "category" }, { label: "Status", field: "status" }, { label: "Test", field: "test" }, { label: "Updated", field: "updated_at" }]} empty="No assumptions are recorded yet. Add one with a test and owner before relying on it." />
+  <div class="section-heading"><h2>Decision log</h2><span>Chronological</span></div>
+  <CollectionTable records={decisions} columns={[{ label: "Decision", field: "decision" }, { label: "Rationale", field: "rationale" }, { label: "Reversible", field: "reversible" }, { label: "Revisit when", field: "revisit_when" }, { label: "Date", field: "date" }]} empty="No decisions have been logged. Decisions should be written when they change screening, investment or product direction." />
+</BaseLayout>

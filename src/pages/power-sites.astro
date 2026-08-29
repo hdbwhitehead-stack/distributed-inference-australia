@@ -1,0 +1,27 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CollectionTable from "../components/CollectionTable.astro";
+import Frame from "../components/Frame.astro";
+import PageHeader from "../components/PageHeader.astro";
+import { type ResearchRecord } from "../lib/content";
+const sites = (await getCollection("sites")) as unknown as ResearchRecord[];
+const frameworks = sites.filter((record) => record.data.record_type === "screening-framework");
+const candidates = sites.filter((record) => record.data.record_type === "candidate");
+const conditions = [
+  ["Electrical placement", "Is local load on the correct side of the actual binding constraint and metering boundary?"],
+  ["Five-minute shape", "What power is available at the proposed load level, including ramps, duration and correlation?"],
+  ["Connection headroom", "What do the executed agreement, single-line diagram, transformer and protection settings permit?"],
+  ["Firming and imports", "Can the site import, who pays, and what protected customer load must survive a cheap-power loss?"],
+  ["Fibre and operations", "Are route diversity, model movement, cooling and remote-hands arrangements adequate for the intended service class?"],
+  ["Counterparty and change", "What changes after transmission upgrades, maintenance, altered curtailment or a generator dispute?"]
+];
+---
+<BaseLayout title="Power and sites">
+  <PageHeader eyebrow="Power and site screening" title={'Cheap power is useful only when the <span class="marker">constraint is local</span>.'} lede="Regional curtailment and negative-price statistics are screening signals. A viable site needs its own electrical, power-shape, fibre and operating evidence." meta={`${candidates.length} candidate site record${candidates.length === 1 ? "" : "s"} · ${frameworks.length} screening framework`} />
+  <Frame ticks={true}><div class="frame__body"><p class="mono-label">Screening rule</p><h2>No map before site-level evidence</h2><p class="lede">A local load can only capture a benefit if it is electrically placed at the binding point. Start with the executed connection agreement, single-line diagram and five-minute trace—not a regional average.</p></div></Frame>
+  <div class="section-heading"><h2>Required underwriting conditions</h2><span>Before a site claim</span></div>
+  <div class="detail-grid">{conditions.map(([title, description]) => <section><p class="mono-label">{title}</p><p>{description}</p></section>)}</div>
+  <div class="section-heading"><h2>Candidate-site register</h2><span>Empty is valid</span></div>
+  <CollectionTable records={candidates} columns={[{ label: "Site / identifier", field: "title" }, { label: "Record type", field: "record_type" }, { label: "Screening status", field: "status" }, { label: "Reviewed", field: "reviewed_at" }]} empty="No candidate sites are shown. Do not add plausible-looking locations before permission and site-level data exist." />
+</BaseLayout>

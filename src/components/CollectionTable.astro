@@ -1,0 +1,23 @@
+---
+import { dateText, recordSummary, recordTitle, valueText, type ResearchRecord } from "../lib/content";
+interface Props { records: ResearchRecord[]; columns: Array<{ label: string; field: string }>; empty?: string; }
+const { records, columns, empty = "No records have been added yet." } = Astro.props;
+---
+<div class="frame table-wrap">
+  {records.length ? <table>
+    <thead><tr>{columns.map((column) => <th>{column.label}</th>)}</tr></thead>
+    <tbody>{records.map((record) => <tr id={record.id}>{columns.map((column, index) => {
+      const value = record.data[column.field];
+      const location = record.data.url ?? record.data.repository_path;
+      return <td>
+        {index === 0 ? <><strong>{recordTitle(record)}</strong><br /><span class="record-meta">{record.id}</span></>
+          : column.field === "summary" ? recordSummary(record)
+          : column.field === "location" && typeof location === "string" ? location.startsWith("http")
+            ? <a href={location} target="_blank" rel="noreferrer">Open source ↗</a>
+            : <code>{location}</code>
+          : column.field.includes("date") || column.field.endsWith("_at") ? dateText(value)
+          : valueText(value)}
+      </td>;
+    })}</tr>)}</tbody>
+  </table> : <div class="frame__body"><p class="empty-state">{empty}</p></div>}
+</div>

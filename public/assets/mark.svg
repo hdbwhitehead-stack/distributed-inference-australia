@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Distributed Inference research cockpit">
+  <rect width="48" height="48" fill="#ffffff"/>
+  <path d="M8 14h32M8 24h32M8 34h32M14 8v32M24 8v32M34 8v32" stroke="#e5e7eb"/>
+  <path d="M20 18h8v12h-8z" fill="#19e76e"/>
+</svg>

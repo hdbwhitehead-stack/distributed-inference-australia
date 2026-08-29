@@ -1,0 +1,19 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CollectionTable from "../components/CollectionTable.astro";
+import Frame from "../components/Frame.astro";
+import PageHeader from "../components/PageHeader.astro";
+import { dateText, recordSummary, recordTitle, sortByRecent, type ResearchRecord } from "../lib/content";
+const [sources, timeline, decisions] = await Promise.all([getCollection("sources"), getCollection("timeline"), getCollection("decisions")]);
+const sourceRecords = sources as unknown as ResearchRecord[];
+const timelineRecords = sortByRecent([...(timeline as unknown as ResearchRecord[]), ...(decisions as unknown as ResearchRecord[])]);
+---
+<BaseLayout title="Sources and timeline" wide={true}>
+  <PageHeader eyebrow="Provenance" title={'A claim without a source and review date is <span class="marker">not ready to rely on</span>.'} lede="The source library maintains durable references. The timeline records material research and decision changes without pretending they are comparable scores." meta={`${sourceRecords.length} sources · ${timelineRecords.length} dated updates`} />
+  <div class="detail-grid"><section><p class="mono-label">Source discipline</p><p>Keep publication date, review date, evidence quality and source link close to the claim. Source type informs scrutiny but cannot stand in for a confidence assessment.</p></section><section><p class="mono-label">Publication boundary</p><p>Assume GitHub Pages output can be public. Do not place customer, generator, site, quote, personal or transaction-sensitive material in published content.</p></section></div>
+  <div class="section-heading"><h2>Source library</h2><span>Repository-backed</span></div>
+  <CollectionTable records={sourceRecords} columns={[{ label: "Source", field: "title" }, { label: "Publisher", field: "publisher" }, { label: "Type", field: "source_type" }, { label: "Published", field: "published_at" }, { label: "Reviewed", field: "reviewed_at" }, { label: "Location", field: "location" }]} empty="No sources have been registered. Add durable sources before treating a factual claim as settled." />
+  <div class="section-heading"><h2>Research and decision timeline</h2><span>Most recent first</span></div>
+  <Frame><div class="frame__body">{timelineRecords.length ? <ol class="timeline">{timelineRecords.map((record) => <li><p class="record-meta">{dateText(record.data.date ?? record.data.updated_at)}</p><h3>{recordTitle(record)}</h3><p>{recordSummary(record)}</p></li>)}</ol> : <p class="empty-state">No timeline events yet. Material research updates and decisions should be dated here.</p>}</div></Frame>
+</BaseLayout>

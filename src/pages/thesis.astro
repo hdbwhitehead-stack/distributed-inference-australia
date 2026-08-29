@@ -1,0 +1,25 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Frame from "../components/Frame.astro";
+import PageHeader from "../components/PageHeader.astro";
+import RecordList from "../components/RecordList.astro";
+import { list, recordSummary, recordTitle, sortByRecent, text, type ResearchRecord } from "../lib/content";
+const thesis = sortByRecent((await getCollection("thesis")) as unknown as ResearchRecord[]);
+const current = thesis[0];
+const falsifiers = current ? list(current.data.falsifiers) : [];
+---
+<BaseLayout title="Thesis">
+  <PageHeader eyebrow="Current model" title={'The mechanism must survive the <span class="marker">constraints</span>.'} lede="The working thesis separates what is established, inferred and still unproven. It should change when the evidence warrants it." meta={`${thesis.length} thesis version${thesis.length === 1 ? "" : "s"}`} />
+  {current ? <>
+    <Frame ticks={true}><div class="frame__body"><p class="mono-label">Current statement · {text(current.data.status, "testing")}</p><span class:list={["tag", `tag--${String(current.data.confidence ?? "")}`]}>{text(current.data.confidence, "unrated")} confidence</span><h2>{recordTitle(current)}</h2><p class="lede">{recordSummary(current)}</p></div></Frame>
+    <div class="detail-grid">
+      <section><p class="mono-label">Established facts to preserve</p><p>Australian power conditions, connection timing, customer demand and hardware economics need source-level treatment. A source supports a claim; it does not settle the investment case.</p></section>
+      <section><p class="mono-label">Working interpretation</p><p>Movable, restartable jobs may turn imperfect power and smaller connections into a useful inference service. The control plane, contracts and firm reserve are integral to the product rather than supporting detail.</p></section>
+      <section><p class="mono-label">Unresolved questions</p><p>Which customers will contract flexible demand, which electrical constraints are locally capturable, and whether lost utilisation outruns the power advantage remain open.</p></section>
+      <section><p class="mono-label">Falsifiers</p>{falsifiers.length ? <ul class="checklist">{falsifiers.map((item) => <li>{item}</li>)}</ul> : <p class="empty-state">Record explicit falsifiers in the thesis frontmatter. A thesis without them cannot be usefully tested.</p>}</section>
+    </div>
+  </> : <Frame><div class="frame__body"><p class="empty-state">No thesis record exists yet. Add a current Markdown record with a title, summary, confidence and falsifiers.</p></div></Frame>}
+  <div class="section-heading"><h2>Version history</h2><span>Preserved in Git and records</span></div>
+  <Frame><div class="frame__body"><RecordList records={thesis.slice(1)} dateField="updated_at" tagField="status" empty="The first thesis version will be preserved here once it changes." /></div></Frame>
+</BaseLayout>

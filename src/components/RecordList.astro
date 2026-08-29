@@ -1,0 +1,14 @@
+---
+import { dateText, recordSummary, recordTitle, text, type ResearchRecord } from "../lib/content";
+interface Props { records: ResearchRecord[]; empty?: string; dateField?: string; tagField?: string; limit?: number; }
+const { records, empty = "No records have been added yet.", dateField = "updated_at", tagField, limit } = Astro.props;
+const visible = typeof limit === "number" ? records.slice(0, limit) : records;
+---
+{visible.length ? <ul class="record-list">
+  {visible.map((record) => <li>
+    {tagField && <span class:list={["tag", `tag--${String(record.data[tagField] ?? "")}`]}>{text(record.data[tagField], "unclassified")}</span>}
+    <h3>{recordTitle(record)}</h3>
+    <p>{recordSummary(record)}</p>
+    <span class="record-meta">{record.id} · {dateText(record.data[dateField])}</span>
+  </li>)}
+</ul> : <p class="empty-state">{empty}</p>}

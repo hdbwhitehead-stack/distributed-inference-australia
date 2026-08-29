@@ -1,0 +1,7 @@
+---
+interface Props { tinted?: boolean; ticks?: boolean; class?: string; }
+const { tinted = false, ticks = false, class: className = "" } = Astro.props;
+---
+<section class:list={["frame", tinted && "frame--tinted", ticks && "frame--ticks", className]}>
+  <slot />
+</section>

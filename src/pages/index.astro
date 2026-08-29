@@ -1,0 +1,74 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Frame from "../components/Frame.astro";
+import PageHeader from "../components/PageHeader.astro";
+import RecordList from "../components/RecordList.astro";
+import { freshness } from "../lib/freshness";
+import { recordSummary, recordTitle, sortByRecent, text, type ResearchRecord } from "../lib/content";
+
+const [thesis, evidence, assumptions, queue, decisions] = await Promise.all([
+  getCollection("thesis"), getCollection("evidence"), getCollection("assumptions"), getCollection("researchQueue"), getCollection("decisions")
+]);
+const thesisRecords = sortByRecent(thesis as unknown as ResearchRecord[]);
+const evidenceRecords = evidence as unknown as ResearchRecord[];
+const assumptionRecords = assumptions as unknown as ResearchRecord[];
+const queueRecords = queue as unknown as ResearchRecord[];
+const decisionRecords = sortByRecent(decisions as unknown as ResearchRecord[]);
+const currentThesis = thesisRecords[0];
+const confidenceOrder = { high: 3, medium: 2, low: 1 } as Record<string, number>;
+const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 } as Record<string, number>;
+const byConfidence = (a: ResearchRecord, b: ResearchRecord) =>
+  (confidenceOrder[String(b.data.confidence)] ?? 0) - (confidenceOrder[String(a.data.confidence)] ?? 0);
+const support = evidenceRecords.filter((item) => item.data.stance === "supports").sort(byConfidence).slice(0, 3);
+const challenge = evidenceRecords.filter((item) => item.data.stance === "challenges").sort(byConfidence).slice(0, 3);
+const criticalAssumptions = assumptionRecords.filter((item) => item.data.status === "open" || item.data.confidence === "low").slice(0, 4);
+const nextActions = queueRecords.filter((item) => ["queued", "in-progress"].includes(String(item.data.status))).sort((a, b) =>
+  (priorityOrder[String(a.data.priority)] ?? 9) - (priorityOrder[String(b.data.priority)] ?? 9)
+).slice(0, 4);
+const allRecords = [...thesisRecords, ...evidenceRecords, ...assumptionRecords, ...queueRecords, ...decisionRecords];
+const staleCount = allRecords.filter((record) => freshness(record.data.reviewed_at ?? record.data.updated_at ?? record.data.date) === "stale").length;
+const unknownCount = allRecords.filter((record) => freshness(record.data.reviewed_at ?? record.data.updated_at ?? record.data.date) === "unknown").length;
+const base = import.meta.env.BASE_URL;
+---
+<BaseLayout title="Dashboard">
+  <PageHeader eyebrow="Research dashboard" title={'What we believe, <span class="marker">what could break it</span>, and what to test next.'} lede="A working system for the distributed-inference question. It keeps the thesis, contrary evidence, unresolved assumptions and next actions in one visible place." meta={`Updated from ${allRecords.length} research records`} />
+
+  <section class="metric-grid" aria-label="Research status">
+    <div class="metric"><p class="mono-label">Current thesis</p><p class="metric__value">{thesisRecords.length}</p><p class="metric__hint">versioned record{thesisRecords.length === 1 ? "" : "s"}</p></div>
+    <div class="metric"><p class="mono-label">Evidence</p><p class="metric__value">{evidenceRecords.length}</p><p class="metric__hint">support, challenge and context</p></div>
+    <div class="metric"><p class="mono-label">Stale review</p><p class="metric__value">{staleCount}</p><p class="metric__hint">records older than 120 days</p></div>
+    <div class="metric"><p class="mono-label">Undated</p><p class="metric__value">{unknownCount}</p><p class="metric__hint">needs a review date</p></div>
+  </section>
+
+  <div class="dashboard-grid">
+    <Frame ticks={true}>
+      <div class="frame__body">
+        <p class="mono-label">Current working thesis</p>
+        {currentThesis ? <>
+          <span class:list={["tag", `tag--${String(currentThesis.data.confidence ?? "")}`]}>{text(currentThesis.data.confidence, "unrated")} confidence</span>
+          <h2>{recordTitle(currentThesis)}</h2>
+          <p class="lede">{recordSummary(currentThesis)}</p>
+          <p class="notice">This is a testable interpretation, not a conclusion. Falsifiers and adverse evidence are kept visible below.</p>
+          <a href={`${base}thesis/`}>Read the thesis and falsifiers →</a>
+        </> : <p class="empty-state">Add a Markdown record to <code>src/content/thesis/</code> to establish the current thesis.</p>}
+      </div>
+    </Frame>
+    <Frame tinted={true}>
+      <div class="frame__body">
+        <p class="mono-label">Recent project changes</p>
+        <RecordList records={decisionRecords} dateField="date" tagField="status" limit={4} empty="No decisions have been logged yet." />
+      </div>
+    </Frame>
+  </div>
+
+  <div class="dashboard-grid">
+    <Frame><div class="frame__body"><div class="section-heading"><h2>Strongest support</h2><a href={`${base}evidence/`}>All evidence →</a></div><RecordList records={support} dateField="reviewed_at" tagField="stance" empty="No supporting evidence has been added." /></div></Frame>
+    <Frame><div class="frame__body"><div class="section-heading"><h2>Strongest challenge</h2><a href={`${base}evidence/`}>All evidence →</a></div><RecordList records={challenge} dateField="reviewed_at" tagField="stance" empty="No challenging evidence has been added. This is a gap, not reassurance." /></div></Frame>
+  </div>
+
+  <div class="dashboard-grid">
+    <Frame><div class="frame__body"><div class="section-heading"><h2>Critical assumptions</h2><a href={`${base}assumptions-decisions/`}>Register →</a></div><RecordList records={criticalAssumptions} dateField="updated_at" tagField="status" empty="No open assumptions have been marked yet." /></div></Frame>
+    <Frame><div class="frame__body"><div class="section-heading"><h2>Next actions</h2><a href={`${base}research-queue/`}>Research queue →</a></div><RecordList records={nextActions} tagField="priority" empty="No queued research actions are recorded." /></div></Frame>
+  </div>
+</BaseLayout>
