@@ -1,5 +1,7 @@
 # Repository instructions
 
+- At the start of substantial work, read `PROJECT_STATE.md`, `CLAUDE.md` and the relevant structured records under `src/content/`. Treat `PROJECT_STATE.md` as a current index, not a substitute for dated source-linked records.
+- When authorised work materially changes the thesis, decisions, evidence gates, research priorities or publication status, update `PROJECT_STATE.md` in the same change.
 - Treat `src/content/` and `research/` as research records. Do not rewrite claims, sources, dates or review labels without an explicit research update.
 - The Astro content schema is the data contract. Keep the interface tolerant of empty collections and unknown optional fields.
 - Do not add a database, authentication layer or server runtime for this static cockpit.
