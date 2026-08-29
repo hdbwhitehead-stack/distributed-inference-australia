@@ -4,15 +4,29 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Frame from "../components/Frame.astro";
 import PageHeader from "../components/PageHeader.astro";
 import RecordList from "../components/RecordList.astro";
-import { type ResearchRecord } from "../lib/content";
-const queue = (await getCollection("researchQueue")) as unknown as ResearchRecord[];
+import { dateText, list, recordTitle, text, type ResearchRecord } from "../lib/content";
+const [queueCollection, sourceCollection] = await Promise.all([getCollection("researchQueue"), getCollection("sources")]);
+const queue = queueCollection as unknown as ResearchRecord[];
+const sources = sourceCollection as unknown as ResearchRecord[];
+const sourceLookup = new Map(sources.map((source) => [source.id, { title: recordTitle(source), url: source.data.url }]));
 const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 } as Record<string, number>;
 const ordered = [...queue].sort((a, b) => (priorityOrder[String(a.data.priority)] ?? 9) - (priorityOrder[String(b.data.priority)] ?? 9));
 const critical = ordered.filter((record) => record.data.priority === "critical");
 ---
 <BaseLayout title="Research queue">
-  <PageHeader eyebrow="Research queue" title={'Prioritise questions that can <span class="marker">change a deployment decision</span>.'} lede="The immediate work is not a broad market study. It is customer demand, site-specific power, usable five-minute energy, fibre, and accelerator procurement economics." meta={`${queue.length} queued questions`} />
+  <PageHeader eyebrow="Research queue" title={'Prioritise questions that can <span class="marker">change a deployment decision</span>.'} lede="The research frontier now spans customer demand, NEM settlement and value capture, five-minute co-dispatch, connection engineering, fibre, facility performance, hardware, financing, data obligations and environmental claims. None of these records is a conclusion." meta={`${queue.length} research questions · ${critical.length} critical`} />
   <div class="dashboard-grid"><Frame ticks={true}><div class="frame__body"><p class="mono-label">Critical questions</p><RecordList records={critical} tagField="priority" empty="No critical questions are marked. The queue needs a ranked first decision." /></div></Frame><Frame tinted={true}><div class="frame__body"><p class="mono-label">Research discipline</p><p>Every question should say why it matters, its next action, and what result would change the thesis, economics or deployment plan.</p><p class="notice">Do not substitute a generic source for site-specific or customer-specific evidence where those are the decision gates.</p></div></Frame></div>
   <div class="section-heading"><h2>All research actions</h2><span>Ordered by priority</span></div>
-  <Frame><div class="frame__body"><RecordList records={ordered} tagField="priority" empty="No research actions have been added." /></div></Frame>
+  {ordered.length ? <div class="research-list">{ordered.map((record) => {
+    const sourceIds = list(record.data.source_ids);
+    const linkedSources = sourceIds.map((id) => ({ id, ...sourceLookup.get(id) })).filter((source) => typeof source.url === "string");
+    return <article class="research-card">
+      <div class="research-card__top"><div><span class:list={["tag", `tag--${String(record.data.priority ?? "")}`]}>{text(record.data.priority, "unranked")}</span> <span class="tag">{text(record.data.category, "uncategorised")}</span></div><span class="record-meta">{text(record.data.status, "unknown")}</span></div>
+      <h2>{recordTitle(record)}</h2>
+      <div class="research-card__section"><p class="mono-label">Why it matters</p><p>{text(record.data.why_it_matters)}</p></div>
+      <div class="research-card__section"><p class="mono-label">Next action</p><p>{text(record.data.next_action)}</p></div>
+      {linkedSources.length ? <div class="research-card__sources"><span class="record-meta">Starting sources</span>{linkedSources.map((source) => <a href={String(source.url)} target="_blank" rel="noreferrer">{source.title ?? source.id} ↗</a>)}</div> : null}
+      <p class="record-meta">{record.id} · updated {dateText(record.data.updated_at)}</p>
+    </article>;
+  })}</div> : <p class="empty-state">No research actions have been added.</p>}
 </BaseLayout>

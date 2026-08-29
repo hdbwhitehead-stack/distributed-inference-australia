@@ -30,12 +30,14 @@ const stances = unique(records.map((record) => String(record.data.stance ?? ""))
     {records.map((record) => {
       const sourceIds = list(record.data.source_ids);
       const sourceUrl = sourceIds.map((id) => sourceLookup.get(id)).find((value): value is string => typeof value === "string");
-      const search = [record.id, recordTitle(record), recordSummary(record), record.data.source_name, record.data.source_type, record.data.stance, record.data.confidence, ...list(record.data.themes), ...list(record.data.implications)].filter(Boolean).join(" ").toLowerCase();
+      const search = [record.id, recordTitle(record), recordSummary(record), record.data.source_name, record.data.source_type, record.data.stance, record.data.confidence, record.data.next_verification, ...list(record.data.themes), ...list(record.data.implications)].filter(Boolean).join(" ").toLowerCase();
       const reviewed = record.data.reviewed_at ?? record.data.updated_at;
       return <article class="evidence-card" data-evidence-card data-search={search} data-stance={String(record.data.stance ?? "")} data-themes={list(record.data.themes).join("|")} data-confidence={String(record.data.confidence ?? "")} data-source={String(record.data.source_type ?? "")} data-freshness={freshnessLabel(reviewed).replace(" due", "")}>
         <div class="evidence-card__top"><span class:list={["tag", `tag--${String(record.data.stance ?? "")}`]}>{text(record.data.stance, "context")}</span><span class="record-meta">{text(record.data.confidence, "unrated")}</span></div>
         <h2>{recordTitle(record)}</h2><p>{recordSummary(record)}</p>
         <p class="record-meta">{list(record.data.themes).join(" · ") || "no theme"}</p>
+        {list(record.data.implications).length ? <div class="evidence-card__details"><p class="mono-label">Implications to test</p><ul>{list(record.data.implications).map((item) => <li>{item}</li>)}</ul></div> : null}
+        {typeof record.data.next_verification === "string" ? <div class="evidence-card__details"><p class="mono-label">Next verification</p><p>{record.data.next_verification}</p></div> : null}
         <div class="evidence-card__footer">{text(record.data.source_type, "source type unknown")} · reviewed {dateText(reviewed)} · {freshnessLabel(reviewed)}</div>
         <p>{sourceUrl ? <a href={sourceUrl} target="_blank" rel="noreferrer">Open source ↗</a> : sourceIds.length ? <a href={`${base}sources-timeline/#${sourceIds[0]}`}>Open source record →</a> : <a href={`${base}sources-timeline/`}>Open source register →</a>}{list(record.data.related_theses).length ? <> · <a href={`${base}thesis/`}>Related thesis →</a></> : null}</p>
       </article>;

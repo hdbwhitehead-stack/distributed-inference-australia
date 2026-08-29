@@ -87,7 +87,18 @@ tr:hover td { background: var(--surface); }
 .evidence-card[hidden] { display: none; }
 .evidence-card__top { align-items: flex-start; display: flex; gap: 8px; justify-content: space-between; }
 .evidence-card p { color: #3d463e; font-size: .88rem; }
+.evidence-card__details { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+.evidence-card__details ul { color: #3d463e; font-size: .84rem; margin: 0 0 12px; padding-left: 18px; }
+.evidence-card__details li + li { margin-top: 5px; }
 .evidence-card__footer { border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: .64rem; letter-spacing: .04em; padding-top: 10px; text-transform: uppercase; }
+.research-list { display: grid; gap: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.research-card { border: 1px solid var(--line); margin: -1px 0 0 -1px; padding: 20px; }
+.research-card__top { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; }
+.research-card__section { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+.research-card__section p:last-child { color: #3d463e; font-size: .88rem; margin-bottom: 0; }
+.research-card__sources { border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 7px 12px; margin: 14px 0; padding-top: 12px; }
+.research-card__sources .record-meta { flex-basis: 100%; }
+.research-card__sources a { font-size: .78rem; }
 .detail-grid { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); }
 .detail-grid > section { border: 1px solid var(--line); margin: -1px 0 0 -1px; padding: 20px; }
 .checklist { list-style: none; margin: 0; padding: 0; }
@@ -111,7 +122,7 @@ tr:hover td { background: var(--surface); }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
   .metric:nth-child(2) { border-right: 0; }
   .metric:nth-child(n + 3) { border-top: 1px solid var(--line); }
-  .dashboard-grid, .detail-grid, .evidence-grid { grid-template-columns: 1fr; }
+  .dashboard-grid, .detail-grid, .evidence-grid, .research-list { grid-template-columns: 1fr; }
   .toolbar { grid-template-columns: 1fr 1fr; }
   .toolbar > :first-child { grid-column: 1 / -1; }
 }
