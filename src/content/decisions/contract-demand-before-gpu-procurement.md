@@ -16,9 +16,15 @@ revisit_when: >-
 related_assumptions:
   - assumption-flexible-demand-depth
   - assumption-power-advantage-exceeds-utilisation-loss
+  - assumption-accelerator-operating-tail
 related_evidence:
   - evidence-utilisation-dominates-power-savings
+  - evidence-a100-commercial-life-into-2029
+  - evidence-depreciation-shield-requires-taxable-income
 ---
 
 The handoff's scale gate requires at least 60% of the proposed fleet contracted
-for 36 months or more, among other conditions.
+for 36 months or more, among other conditions. Evidence of older hardware
+remaining commercially useful does not change that gate: years five to nine
+remain an unlevered equity upside case until supported by local contracts and
+measured operating data.

@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { calculateEconomics, referenceEconomicsScenario } from '../src/lib/economics.ts';
+import {
+  calculateEconomics,
+  calculateHardwareLifeEconomics,
+  referenceEconomicsScenario,
+  referenceHardwareLifeScenario,
+} from '../src/lib/economics.ts';
 
 const closeTo = (actual: number | null, expected: number, tolerance = 1e-6) => {
   if (actual === null) throw new Error('expected a numeric result');
@@ -42,4 +47,27 @@ test('keeps upfront site capex out of annual contribution and rejects invalid ra
     results.revenue - results.electricityCost - results.acceleratorDepreciation - referenceEconomicsScenario.siteOperatingCost,
   );
   assert.throws(() => calculateEconomics({ ...referenceEconomicsScenario, demandOccupancy: 1.01 }), RangeError);
+});
+
+test('separates tax timing from the accelerator operating tail', () => {
+  const results = calculateHardwareLifeEconomics(referenceHardwareLifeScenario);
+
+  assert.equal(results.nominalTaxShield, 2_750_000);
+  closeTo(results.presentValueTaxShieldOverTaxLife, 2_179_282.49, 0.01);
+  closeTo(results.presentValueTaxShieldOverOperatingLife, 1_759_701.72, 0.01);
+  closeTo(results.taxTimingPresentValueBenefit, 419_580.77, 0.01);
+  assert.equal(results.tailYears, 5);
+  assert.equal(results.annualAfterTaxTailContribution, 750_000);
+  assert.equal(results.totalAfterTaxTailContribution, 3_750_000);
+});
+
+test('rejects invalid hardware-life assumptions', () => {
+  assert.throws(
+    () => calculateHardwareLifeEconomics({ ...referenceHardwareLifeScenario, companyTaxRate: 1.01 }),
+    RangeError,
+  );
+  assert.throws(
+    () => calculateHardwareLifeEconomics({ ...referenceHardwareLifeScenario, taxEffectiveLifeYears: 4.5 }),
+    RangeError,
+  );
 });

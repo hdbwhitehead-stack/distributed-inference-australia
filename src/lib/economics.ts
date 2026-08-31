@@ -50,6 +50,29 @@ export interface EconomicsResults {
   totalUpfrontCapex: number;
 }
 
+export interface HardwareLifeScenario {
+  /** Eligible compute equipment cost in AUD. */
+  computeCapex: number;
+  companyTaxRate: number;
+  /** Prime-cost tax effective life. */
+  taxEffectiveLifeYears: number;
+  /** Period over which the same nominal deduction is compared. */
+  operatingLifeYears: number;
+  discountRate: number;
+  /** Pre-tax annual cash contribution after the tax-life period. */
+  annualTailPreTaxContribution: number;
+}
+
+export interface HardwareLifeResults {
+  nominalTaxShield: number;
+  presentValueTaxShieldOverTaxLife: number;
+  presentValueTaxShieldOverOperatingLife: number;
+  taxTimingPresentValueBenefit: number;
+  tailYears: number;
+  annualAfterTaxTailContribution: number;
+  totalAfterTaxTailContribution: number;
+}
+
 export const referenceEconomicsScenario: EconomicsScenario = {
   installedSellableGpus: 500,
   realisedPricePerGpuHour: 6.5,
@@ -66,6 +89,15 @@ export const referenceEconomicsScenario: EconomicsScenario = {
   acceleratorCapexPerGpu: 50_000,
   acceleratorUsefulLifeYears: 4,
   annualFirmOverflowCost: 0,
+};
+
+export const referenceHardwareLifeScenario: HardwareLifeScenario = {
+  computeCapex: 11_000_000,
+  companyTaxRate: 0.25,
+  taxEffectiveLifeYears: 4,
+  operatingLifeYears: 9,
+  discountRate: 0.1,
+  annualTailPreTaxContribution: 1_000_000,
 };
 
 function assertFiniteNonNegative(name: string, value: number): void {
@@ -153,5 +185,58 @@ export function calculateEconomics(scenario: EconomicsScenario): EconomicsResult
     breakEvenUtilisationLossPoints,
     totalAcceleratorCapex,
     totalUpfrontCapex: scenario.siteCapex + totalAcceleratorCapex,
+  };
+}
+
+function presentValueOfEqualAnnualAmounts(total: number, years: number, discountRate: number): number {
+  const annualAmount = total / years;
+  let presentValue = 0;
+  for (let year = 1; year <= years; year += 1) {
+    presentValue += annualAmount / ((1 + discountRate) ** year);
+  }
+  return presentValue;
+}
+
+/**
+ * Separates a tax-depreciation timing benefit from the later operating tail.
+ * This is an illustrative prime-cost comparison, not project tax advice.
+ */
+export function calculateHardwareLifeEconomics(scenario: HardwareLifeScenario): HardwareLifeResults {
+  assertFiniteNonNegative('computeCapex', scenario.computeCapex);
+  assertRate('companyTaxRate', scenario.companyTaxRate);
+  assertFiniteNonNegative('discountRate', scenario.discountRate);
+  assertFiniteNonNegative('annualTailPreTaxContribution', scenario.annualTailPreTaxContribution);
+
+  if (!Number.isInteger(scenario.taxEffectiveLifeYears) || scenario.taxEffectiveLifeYears <= 0) {
+    throw new RangeError('taxEffectiveLifeYears must be a positive whole number.');
+  }
+  if (!Number.isInteger(scenario.operatingLifeYears) || scenario.operatingLifeYears <= 0) {
+    throw new RangeError('operatingLifeYears must be a positive whole number.');
+  }
+
+  const nominalTaxShield = scenario.computeCapex * scenario.companyTaxRate;
+  const presentValueTaxShieldOverTaxLife = presentValueOfEqualAnnualAmounts(
+    nominalTaxShield,
+    scenario.taxEffectiveLifeYears,
+    scenario.discountRate,
+  );
+  const presentValueTaxShieldOverOperatingLife = presentValueOfEqualAnnualAmounts(
+    nominalTaxShield,
+    scenario.operatingLifeYears,
+    scenario.discountRate,
+  );
+  const tailYears = Math.max(scenario.operatingLifeYears - scenario.taxEffectiveLifeYears, 0);
+  const annualAfterTaxTailContribution =
+    scenario.annualTailPreTaxContribution * (1 - scenario.companyTaxRate);
+
+  return {
+    nominalTaxShield,
+    presentValueTaxShieldOverTaxLife,
+    presentValueTaxShieldOverOperatingLife,
+    taxTimingPresentValueBenefit:
+      presentValueTaxShieldOverTaxLife - presentValueTaxShieldOverOperatingLife,
+    tailYears,
+    annualAfterTaxTailContribution,
+    totalAfterTaxTailContribution: annualAfterTaxTailContribution * tailYears,
   };
 }

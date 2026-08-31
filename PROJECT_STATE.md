@@ -1,6 +1,6 @@
 # Distributed Inference Australia — project state
 
-**Last updated:** 29/08/2026
+**Last updated:** 31/08/2026
 
 **Status:** Research and structured feasibility
 
@@ -48,6 +48,12 @@ depreciated hardware than to newly purchased premium accelerators.
   network and contractual arrangements.
 - Accelerator utilisation, depreciation and contracted demand can dominate the
   value of cheaper electricity.
+- CoreWeave's disclosed A100 contract extending into 2029 supports a plausible
+  operating tail for older accelerators, but it does not establish fleet-wide
+  useful life, pricing or economics available to a new operator.
+- Australian tax, accounting and commercial lives must be modelled separately.
+  A four-year tax life can accelerate deductions, while years five to nine are
+  valuable only if the hardware continues to earn cash contribution.
 - The service should expose firm, deadline and flex classes rather than present
   variable infrastructure as conventional uniform cloud capacity.
 - The control plane is central: accepted work, draining, retry, recovery,
@@ -69,6 +75,9 @@ defensible business or an investable site.
   margin.
 - No binding accelerator, integration, warranty, financing or residual-value
   terms have been obtained.
+- No Australian customer evidence yet establishes demand, realised pricing,
+  utilisation, maintenance cost or power efficiency for older accelerator
+  fleets. The years-five-to-nine operating tail remains an upside case.
 - Fibre routes, latency, carrier diversity, protection, power quality, ramping,
   telemetry and summer cooling remain untested for real sites.
 - The control plane has not demonstrated abrupt site loss, idempotent retry,
@@ -86,6 +95,9 @@ defensible business or an investable site.
 5. Design explicit firm, deadline and flex service classes.
 6. Procure accelerators in tranches and expand to one megawatt only against
    long-term contracted demand.
+7. Underwrite new accelerators on a conservative four-year base case. Treat
+   later operating cash flow as an unlevered equity option until local contracts
+   and measured fleet data support it.
 
 The canonical decision records are under `src/content/decisions/`.
 
@@ -101,7 +113,8 @@ The current queue has ten critical questions:
 3. Align customer, power, site and hardware contract tenors so long-lived assets
    do not depend on speculative demand.
 4. Obtain binding accelerator, integration, warranty, support, financing and
-   residual-value terms.
+   residual-value terms; separately test rates, maintenance, power efficiency
+   and workload demand for a years-five-to-nine operating tail.
 5. Identify the real source and operating shape of candidate 1–5 MW power access.
 6. Measure usable five-minute energy, ramps, interruptions and recovery limits at
    250 kW, 1 MW and 5 MW.

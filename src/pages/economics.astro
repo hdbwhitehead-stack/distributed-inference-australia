@@ -1,8 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { calculateEconomics, referenceEconomicsScenario } from '../lib/economics';
+import {
+  calculateEconomics,
+  calculateHardwareLifeEconomics,
+  referenceEconomicsScenario,
+  referenceHardwareLifeScenario,
+} from '../lib/economics';
 
 const reference = calculateEconomics(referenceEconomicsScenario);
+const hardwareLife = calculateHardwareLifeEconomics(referenceHardwareLifeScenario);
 
 function formatAud(value: number): string {
   return new Intl.NumberFormat('en-AU', {
@@ -53,7 +59,7 @@ function formatAud(value: number): string {
       <label>Site capex (A$) <input name="siteCapex" type="number" min="0" step="10000" value="1000000" /></label>
       <label>Annual site operating cost (A$) <input name="siteOperatingCost" type="number" min="0" step="10000" value="500000" /></label>
       <label>Accelerator capex per GPU (A$) <input name="acceleratorCapexPerGpu" type="number" min="0" step="1000" value="50000" /></label>
-      <label>Accelerator useful life (years) <input name="acceleratorUsefulLifeYears" type="number" min="0.1" step="0.1" value="4" /></label>
+      <label>Accounting life used here (years) <input name="acceleratorUsefulLifeYears" type="number" min="0.1" step="0.1" value="4" /></label>
     </fieldset>
 
     <button type="reset">Restore reference case</button>
@@ -77,6 +83,43 @@ function formatAud(value: number): string {
     </dl>
     <p id="scenario-error" class="notice" role="alert" hidden></p>
     <p class="model-note">Power-price advantage compares available facility energy at the two electricity prices, then deducts annual firm overflow. Site capex is reported as upfront investment and excluded from annual gross contribution.</p>
+  </section>
+
+  <section class="hardware-life" aria-labelledby="hardware-life-heading">
+    <div class="hardware-life__intro">
+      <p class="eyebrow">Hardware life</p>
+      <h2 id="hardware-life-heading">Tax timing and the operating tail are separate</h2>
+      <p>
+        This illustration uses A$11 million of eligible compute equipment, a 25% tax rate,
+        four-year prime-cost tax depreciation, a nine-year operating life and a 10% discount rate.
+        It is not a forecast or project tax advice.
+      </p>
+    </div>
+    <dl>
+      <div><dt>Nominal lifetime tax shield</dt><dd>{formatAud(hardwareLife.nominalTaxShield)}</dd></div>
+      <div><dt>PV benefit: four-year versus nine-year deductions</dt><dd>{formatAud(hardwareLife.taxTimingPresentValueBenefit)}</dd></div>
+      <div><dt>Illustrative after-tax years 5–9 contribution</dt><dd>{formatAud(hardwareLife.totalAfterTaxTailContribution)}</dd></div>
+    </dl>
+    <div class="hardware-life__notes">
+      <p>
+        The tail assumes A$1 million of annual pre-tax cash contribution for five years. Its
+        A$3.75 million after-tax value comes from continued operation after the initial
+        underwriting period, not from extra depreciation. Without taxable profits, early
+        deductions generally become carried-forward losses rather than immediate cash.
+      </p>
+      <p>
+        CoreWeave's A100 contract extending into 2029 shows that a 2020 accelerator can retain
+        contracted value approaching nine years. It remains one company disclosure, not proof
+        of fleet-wide pricing or a life available to a new Australian operator.
+      </p>
+      <p class="model-note">
+        Primary sources:
+        <a href="https://s205.q4cdn.com/133937190/files/doc_financials/2026/q2/CRWV-US-CORRECTED-TRANSCRIPT-CoreWeave-Q2-2026-Earnings-Call-11August2026.pdf" target="_blank" rel="noreferrer">CoreWeave Q2 2026 transcript ↗</a>,
+        <a href="https://www.ato.gov.au/law/view/pdf?DocId=OPS%2FLI202520%2F00001&amp;PiT=99991231235958&amp;filename=law%2Fview%2Fpdf%2Fldt%2Fli2025-020.pdf" target="_blank" rel="noreferrer">ATO effective-life determination ↗</a>,
+        <a href="https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/losses/losses/how-to-claim-a-tax-loss" target="_blank" rel="noreferrer">ATO tax-loss guidance ↗</a> and
+        <a href="https://standards.aasb.gov.au/aasb-116-dec-2021" target="_blank" rel="noreferrer">AASB 116 ↗</a>.
+      </p>
+    </div>
   </section>
 
   <section class="economics-visuals" aria-label="Scenario reasoning visuals">
@@ -235,6 +278,9 @@ function formatAud(value: number): string {
   input { box-sizing: border-box; width: 100%; min-height: 2.5rem; padding: .4rem .6rem; font: inherit; }
   button { justify-self: start; padding: .65rem 1rem; font: inherit; }
   .economics-results { margin-top: 2rem; }
+  .hardware-life { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+  .hardware-life__intro, .hardware-life__notes { max-width: 52rem; }
+  .hardware-life__notes { display: grid; gap: .25rem; }
   dl { background: var(--line); display: grid; gap: 1px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 1rem 0; }
   dl div { background: var(--bg); color: var(--ink); padding: 1rem; }
   dt { font-size: .9rem; }

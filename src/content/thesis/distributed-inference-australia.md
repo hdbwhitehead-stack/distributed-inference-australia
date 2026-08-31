@@ -3,7 +3,7 @@ id: thesis-distributed-inference-au
 title: Distributed inference in Australia
 version: 1
 status: testing
-updated_at: 2026-08-29
+updated_at: 2026-08-31
 confidence: medium
 summary: >-
   Australia may support a distributed, grid-responsive inference network because
@@ -17,6 +17,7 @@ supports:
   - evidence-aemo-q1-2026-curtailment
   - evidence-aemo-q4-2025-negative-prices
   - evidence-sail-completion-window
+  - evidence-a100-commercial-life-into-2029
 challenges:
   - evidence-aemo-curtailment-dispersion
   - evidence-utilisation-dominates-power-savings
@@ -25,6 +26,7 @@ related_assumptions:
   - assumption-flexible-demand-depth
   - assumption-local-load-captures-value
   - assumption-firm-reserve-is-affordable
+  - assumption-accelerator-operating-tail
 falsifiers:
   - Site-specific five-minute traces do not provide enough usable energy at an economical load size.
   - Paying customers will not accept measured completion windows or interruption behaviour at a sufficient price.
