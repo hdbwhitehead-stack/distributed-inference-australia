@@ -2,7 +2,7 @@
 id: question-usable-five-minute-energy
 question: >-
   What annual usable MWh, ramps, interruption frequency, duration and restart
-  limits exist at 250 kW, 1 MW and 5 MW load levels?
+  limits exist at 300 kW, 1 MW and 5 MW load levels?
 priority: critical
 category: power
 why_it_matters: >-

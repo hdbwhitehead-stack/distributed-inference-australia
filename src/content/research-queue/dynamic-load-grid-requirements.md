@@ -2,7 +2,7 @@
 id: question-dynamic-load-grid-requirements
 question: >-
   What connection studies, ramp limits, power-quality controls, telemetry and
-  operating obligations apply to a rapidly changing 250 kW, 1 MW or 5 MW compute load?
+  operating obligations apply to a rapidly changing 300 kW, 1 MW or 5 MW compute load?
 priority: critical
 category: site
 why_it_matters: >-

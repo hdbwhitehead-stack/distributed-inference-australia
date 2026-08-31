@@ -24,7 +24,7 @@ implications:
   - Dispatch mode may fit a load that chooses when to consume rather than only reducing from a historical baseline.
   - Telemetry, bidding, conformance and operational obligations may add material cost and constrain compute scheduling.
 next_verification: >-
-  Map the final VSR technical and market requirements to a 250 kW, 1 MW and 5 MW
+  Map the final VSR technical and market requirements to a 300 kW, 1 MW and 5 MW
   compute load after implementation material and participation costs are settled.
 ---
 

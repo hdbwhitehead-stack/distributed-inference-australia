@@ -3,7 +3,7 @@ id: site-candidate-screening-framework
 record_type: screening-framework
 status: framework
 title: Candidate-site screening framework
-reviewed_at: 2026-08-29
+reviewed_at: 2026-08-31
 source_ids:
   - source-distributed-inference-australia-handoff
   - source-research-cockpit-handoff
@@ -22,6 +22,9 @@ hard_blocks:
   - No credible fibre path or required customer latency cannot be met.
   - Local load is on the wrong side of the binding constraint.
 candidate_fields:
+  - public location and coordinate precision
+  - status, owner, priority, comments and next action
+  - nominal 300 kW pilot fit and expansion headroom
   - electrical placement and metering boundary
   - reason for curtailment
   - five-minute available energy

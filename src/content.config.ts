@@ -108,16 +108,43 @@ const sites = defineCollection({
     id,
     record_type: z.enum(['screening-framework', 'candidate']),
     title: z.string(),
-    status: z.enum(['framework', 'unscreened', 'screening', 'shortlisted', 'rejected']).optional(),
+    status: z.enum(['framework', 'lead', 'screening', 'diligence', 'shortlisted', 'rejected', 'dormant']).optional(),
     reviewed_at: date,
     source_ids: z.array(id).min(1),
     screening_criteria: z.array(z.string()).default([]),
-    hard_blocks: z.array(z.string()).default([]),
     candidate_fields: z.array(z.string()).default([]),
+    location: z.object({
+      state: z.enum(['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']),
+      locality: z.string(),
+      latitude: z.number().min(-44).max(-10),
+      longitude: z.number().min(112).max(154),
+      precision: z.enum(['exact', 'locality', 'region']),
+    }).optional(),
+    site_type: z.enum(['generator-adjacent', 'industrial', 'colocation', 'grid-connected', 'other']).optional(),
+    target_kw: z.number().positive().default(300),
+    operating_mode: z.enum(['firm', 'flexible', 'hybrid']).optional(),
+    continuous_kw: z.number().nonnegative().optional(),
+    flexible_kw: z.number().nonnegative().optional(),
+    expansion_kw: z.number().nonnegative().optional(),
+    owner: z.string().optional(),
+    priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    rationale: z.string().optional(),
+    next_action: z.string().optional(),
+    next_review_at: date.optional(),
+    diligence: z.record(z.string(), z.enum(['unknown', 'requested', 'partial', 'evidenced', 'blocked'])).default({}),
+    open_questions: z.array(z.string()).default([]),
+    hard_blocks: z.array(z.string()).default([]),
+    comments: z.array(z.object({ date, author: z.string(), text: z.string() })).default([]),
     notes: z.string(),
   }).superRefine((value, ctx) => {
     if (value.record_type === 'screening-framework' && value.screening_criteria.length === 0) {
       ctx.addIssue({ code: 'custom', message: 'A screening framework needs criteria.' });
+    }
+    if (value.record_type === 'candidate' && !value.location) {
+      ctx.addIssue({ code: 'custom', message: 'A candidate needs a public map location.' });
+    }
+    if (value.record_type === 'candidate' && !value.status) {
+      ctx.addIssue({ code: 'custom', message: 'A candidate needs a screening status.' });
     }
   }),
 });

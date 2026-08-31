@@ -22,4 +22,4 @@ related_evidence:
 ---
 
 The recommended sequence starts with site data and customers, then a rented
-compute prototype and a 100–250 kW pilot.
+compute prototype and a nominal 300 kW pilot.

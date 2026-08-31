@@ -82,7 +82,7 @@ defensible business or an investable site.
   telemetry and summer cooling remain untested for real sites.
 - The control plane has not demonstrated abrupt site loss, idempotent retry,
   duplicate-billing prevention or safe recovery.
-- No 100–250 kW pilot or independent two-site failure test has been run.
+- No 300 kW pilot or independent two-site failure test has been run.
 
 ## Active decisions
 
@@ -117,7 +117,7 @@ The current queue has ten critical questions:
    and workload demand for a years-five-to-nine operating tail.
 5. Identify the real source and operating shape of candidate 1–5 MW power access.
 6. Measure usable five-minute energy, ramps, interruptions and recovery limits at
-   250 kW, 1 MW and 5 MW.
+   300 kW, 1 MW and 5 MW.
 7. Establish how a local load can retain avoided-curtailment or low-price value
    through actual settlement and contracts.
 8. Co-dispatch real or representative workloads against site-level power traces
@@ -142,7 +142,7 @@ Before a material deployment, the project must demonstrate:
 - tenant security, model custody, physical access and OT segmentation;
 - unit economics based on accepted completed work after retries.
 
-A 100–250 kW pilot should not start until at least 60–70% of its capacity is
+The nominal 300 kW pilot should not start until at least 60–70% of its capacity is
 reserved for twelve months and the equipment, integration, fibre, electrical,
 cooling, contracts, security and failover requirements are evidenced.
 
