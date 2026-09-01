@@ -21,7 +21,8 @@ related_assumptions:
 source_ids:
   - source-aemo-connection-process-overview
   - source-power-2026-primer
-updated_at: 2026-08-29
+  - source-semianalysis-vera-rubin-extreme-co-design
+updated_at: 2026-08-31
 ---
 
 The result should define an admissible electrical operating envelope for the

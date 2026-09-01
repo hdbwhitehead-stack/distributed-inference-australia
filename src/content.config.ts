@@ -83,6 +83,17 @@ const decisions = defineCollection({
     revisit_when: z.string(),
     related_assumptions: z.array(id).default([]),
     related_evidence: z.array(id).default([]),
+    design_case: z.object({
+      rack_platform: z.string(),
+      rack_power_kw_low: z.number().positive(),
+      rack_power_kw_high: z.number().positive(),
+      pue: z.number().min(1),
+      calculated_facility_kw_low: z.number().positive(),
+      calculated_facility_kw_high: z.number().positive(),
+      screening_envelope_kw: z.number().positive(),
+      boundary: z.literal('facility-meter-load'),
+      input_confidence: confidence,
+    }).optional(),
   }),
 });
 
@@ -102,49 +113,75 @@ const workloads = defineCollection({
   }),
 });
 
+const siteCheckArea = z.enum([
+  'connection-and-boundary',
+  'usable-energy-shape',
+  'delivered-economics-and-value',
+  'fibre-and-latency',
+  'thermal-physical-and-planning',
+  'counterparty-operations-and-security',
+]);
+
+const siteCheck = z.object({
+  area: siteCheckArea,
+  status: z.enum(['unknown', 'in-progress', 'supported', 'failed']),
+  source_ids: z.array(id).default([]),
+  reviewed_at: date.optional(),
+  finding: z.string().optional(),
+  next_action: z.string().optional(),
+}).superRefine((value, ctx) => {
+  if (['supported', 'failed'].includes(value.status)) {
+    if (!value.finding) ctx.addIssue({ code: 'custom', message: `${value.status} checks need a finding.` });
+    if (!value.reviewed_at) ctx.addIssue({ code: 'custom', message: `${value.status} checks need a review date.` });
+    if (value.source_ids.length === 0) ctx.addIssue({ code: 'custom', message: `${value.status} checks need a source.` });
+  }
+  if (value.status === 'in-progress' && !value.next_action) ctx.addIssue({ code: 'custom', message: 'In-progress checks need a next action.' });
+});
+
 const sites = defineCollection({
   loader: glob({ base: './src/content/sites', pattern: '**/*.md' }),
   schema: z.object({
     id,
-    record_type: z.enum(['screening-framework', 'candidate']),
     title: z.string(),
-    status: z.enum(['framework', 'lead', 'screening', 'diligence', 'shortlisted', 'rejected', 'dormant']).optional(),
+    stage: z.enum(['lead', 'screening', 'shortlisted', 'rejected']),
     reviewed_at: date,
     source_ids: z.array(id).min(1),
-    screening_criteria: z.array(z.string()).default([]),
-    candidate_fields: z.array(z.string()).default([]),
-    location: z.object({
+    public_location: z.object({
       state: z.enum(['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']),
       locality: z.string(),
       latitude: z.number().min(-44).max(-10),
       longitude: z.number().min(112).max(154),
-      precision: z.enum(['exact', 'locality', 'region']),
-    }).optional(),
-    site_type: z.enum(['generator-adjacent', 'industrial', 'colocation', 'grid-connected', 'other']).optional(),
-    target_kw: z.number().positive().default(300),
-    operating_mode: z.enum(['firm', 'flexible', 'hybrid']).optional(),
-    continuous_kw: z.number().nonnegative().optional(),
-    flexible_kw: z.number().nonnegative().optional(),
-    expansion_kw: z.number().nonnegative().optional(),
+      precision: z.enum(['locality', 'region']),
+      source_ids: z.array(id).min(1),
+    }),
+    site_type: z.enum(['generator-adjacent', 'industrial-grid-connected', 'colocation', 'other']).optional(),
     owner: z.string().optional(),
     priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-    rationale: z.string().optional(),
+    rationale: z.string(),
     next_action: z.string().optional(),
     next_review_at: date.optional(),
-    diligence: z.record(z.string(), z.enum(['unknown', 'requested', 'partial', 'evidenced', 'blocked'])).default({}),
+    capacity_observations: z.array(z.object({
+      measure: z.enum(['continuous-available-power', 'flexible-available-power', 'connection-headroom', 'import-capability', 'transformer-headroom']),
+      value_kw: z.number().positive(),
+      boundary: z.enum(['it-load', 'facility-meter-load', 'site-import-capacity', 'connection-capacity']),
+      basis: z.enum(['measured', 'contractual', 'engineering-assessment']),
+      period_or_condition: z.string(),
+      observed_at: date.optional(),
+      source_ids: z.array(id).min(1),
+    })).default([]),
+    checks: z.array(siteCheck).default([]),
     open_questions: z.array(z.string()).default([]),
-    hard_blocks: z.array(z.string()).default([]),
     comments: z.array(z.object({ date, author: z.string(), text: z.string() })).default([]),
     notes: z.string(),
   }).superRefine((value, ctx) => {
-    if (value.record_type === 'screening-framework' && value.screening_criteria.length === 0) {
-      ctx.addIssue({ code: 'custom', message: 'A screening framework needs criteria.' });
-    }
-    if (value.record_type === 'candidate' && !value.location) {
-      ctx.addIssue({ code: 'custom', message: 'A candidate needs a public map location.' });
-    }
-    if (value.record_type === 'candidate' && !value.status) {
-      ctx.addIssue({ code: 'custom', message: 'A candidate needs a screening status.' });
+    const areas = value.checks.map((check) => check.area);
+    const failed = value.checks.some((check) => check.status === 'failed');
+    if (new Set(areas).size !== areas.length) ctx.addIssue({ code: 'custom', message: 'A candidate may have only one finding per check area.' });
+    if (failed && value.stage !== 'rejected') ctx.addIssue({ code: 'custom', message: 'A failed check requires rejected stage.' });
+    if (value.stage === 'rejected' && !failed) ctx.addIssue({ code: 'custom', message: 'Rejected stage needs a documented failed check.' });
+    if (value.stage === 'shortlisted') {
+      const supported = new Set(value.checks.filter((check) => check.status === 'supported').map((check) => check.area));
+      for (const area of siteCheckArea.options) if (!supported.has(area)) ctx.addIssue({ code: 'custom', message: `Shortlisted stage needs supported check '${area}'.` });
     }
   }),
 });

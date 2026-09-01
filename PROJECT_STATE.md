@@ -1,6 +1,6 @@
 # Distributed Inference Australia — project state
 
-**Last updated:** 31/08/2026
+**Last updated:** 01/09/2026
 
 **Status:** Research and structured feasibility
 
@@ -98,6 +98,9 @@ defensible business or an investable site.
 7. Underwrite new accelerators on a conservative four-year base case. Treat
    later operating cash flow as an unlevered equity option until local contracts
    and measured fleet data support it.
+8. Use one Vera Rubin NVL72 rack at an assumed 1.25 PUE as the reference pilot
+   configuration. Screen against a rounded 300 kW facility-meter envelope while
+   keeping rack power, PUE and candidate-site capacity separately evidenced.
 
 The canonical decision records are under `src/content/decisions/`.
 
@@ -142,9 +145,19 @@ Before a material deployment, the project must demonstrate:
 - tenant security, model custody, physical access and OT segmentation;
 - unit economics based on accepted completed work after retries.
 
-The nominal 300 kW pilot should not start until at least 60–70% of its capacity is
-reserved for twelve months and the equipment, integration, fibre, electrical,
-cooling, contracts, security and failover requirements are evidenced.
+The nominal 300 kW figure is a provisional facility-meter planning envelope for
+one Vera Rubin NVL72 rack. It uses a practitioner estimate of 180–220 kW rack TDP,
+the project's 1.25 PUE assumption and a round-up from the calculated 225–275 kW
+facility range. It is not a site fact, connection entitlement, available-energy
+guarantee, expected draw or customer-compute reservation. Candidate capability
+must be evidenced separately at a stated electrical boundary.
+
+The pilot should not start until signed commitments cover at least 60% of its
+benchmarked sellable compute capacity for twelve months, supported by take-or-pay,
+prepayment or minimum monthly payments. The denominator must be named GPU-hours,
+accelerator/service units or accepted-work revenue, not raw electrical kW. The
+equipment, integration, fibre, electrical, cooling, contracts, security and
+failover requirements must also be evidenced.
 
 Expansion to one megawatt requires, among other gates, at least 60% of the fleet
 contracted for 36 months or more, paid pilot utilisation above 60%, a debt-service

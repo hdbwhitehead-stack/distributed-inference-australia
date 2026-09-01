@@ -19,7 +19,8 @@ related_assumptions:
   - assumption-warm-recovery-fits-power-window
 source_ids:
   - source-distributed-inference-australia-handoff
-updated_at: 2026-08-29
+  - source-semianalysis-vera-rubin-extreme-co-design
+updated_at: 2026-08-31
 ---
 
 Separate economic offloading, network curtailment, interconnector limits,

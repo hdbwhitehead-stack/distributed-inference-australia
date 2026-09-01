@@ -2,137 +2,91 @@
 import "leaflet/dist/leaflet.css";
 import { dateText, type ResearchRecord } from "../lib/content";
 
-interface Props { candidates: ResearchRecord[]; sources: ResearchRecord[]; }
-type LocationData = { state: string; locality: string; latitude: number; longitude: number; precision: string };
+interface Props { candidates: ResearchRecord[]; sources: ResearchRecord[]; designCase?: ResearchRecord; }
+type Location = { state: string; locality: string; latitude: number; longitude: number; precision: "locality" | "region" };
+type Check = { area: string; status: "unknown" | "in-progress" | "supported" | "failed"; source_ids?: string[]; reviewed_at?: Date; finding?: string; next_action?: string };
+type Observation = { measure: string; value_kw: number; boundary: string; basis: string; period_or_condition: string; source_ids: string[] };
 type Comment = { date: Date; author: string; text: string };
-const { candidates, sources } = Astro.props;
+
+const { candidates, sources, designCase } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const sourceById = new Map(sources.map((source) => [source.data.id, source]));
-const stringList = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-const diligenceLabels: Record<string, string> = {
-  electrical_placement: "Electrical placement", connection_headroom: "Connection headroom",
-  five_minute_trace: "Five-minute trace", delivered_energy_price: "Delivered energy price",
-  import_and_firming: "Import and firming", fibre: "Fibre", cooling: "Cooling",
-  planning_and_land: "Planning and land", physical_operations: "Physical operations",
-  counterparty: "Counterparty", security: "Security", commercial_structure: "Commercial structure",
-};
-const views = candidates.map((candidate) => {
-  const location = candidate.data.location as LocationData;
-  const diligence = candidate.data.diligence as Record<string, string>;
-  const evidence = Object.values(diligence);
-  return {
-    candidate, location, diligence, evidence: evidence.join(" "),
-    evidenced: evidence.filter((value) => value === "evidenced").length,
-    blocked: evidence.filter((value) => value === "blocked").length,
-    comments: candidate.data.comments as Comment[], hardBlocks: stringList(candidate.data.hard_blocks),
-    questions: stringList(candidate.data.open_questions), sourceIds: stringList(candidate.data.source_ids),
-  };
-});
-const states = [...new Set(views.map((view) => view.location.state))].sort();
-const statuses = [...new Set(views.map((view) => String(view.candidate.data.status ?? "lead")))].sort();
-const markerData = JSON.stringify(views.map((view) => ({
-  id: view.candidate.id, title: view.candidate.data.title, status: view.candidate.data.status,
-  locality: view.location.locality, longitude: view.location.longitude, latitude: view.location.latitude,
-}))).replaceAll("<", "\\u003c");
+const design = designCase?.data.design_case as { screening_envelope_kw?: number } | undefined;
+const designCaseKw = design?.screening_envelope_kw;
+const checkAreas = [
+  ["connection-and-boundary", "Connection and electrical boundary"],
+  ["usable-energy-shape", "Usable five-minute energy shape"],
+  ["delivered-economics-and-value", "Delivered economics and local value"],
+  ["fibre-and-latency", "Fibre and latency"],
+  ["thermal-physical-and-planning", "Thermal, physical and planning"],
+  ["counterparty-operations-and-security", "Counterparty, operations and security"],
+] as const;
+const views = candidates.map((candidate) => ({
+  candidate,
+  location: candidate.data.public_location as Location,
+  checks: new Map((candidate.data.checks as Check[]).map((check) => [check.area, check])),
+  observations: candidate.data.capacity_observations as Observation[],
+  comments: candidate.data.comments as Comment[],
+  sourceIds: candidate.data.source_ids as string[],
+}));
+const showFilters = views.length > 8;
+const stages = [...new Set(views.map((view) => String(view.candidate.data.stage)))].sort();
+const markerData = JSON.stringify(views.map((view) => ({ id: view.candidate.id, title: view.candidate.data.title, stage: view.candidate.data.stage, locality: view.location.locality, longitude: view.location.longitude, latitude: view.location.latitude, precision: view.location.precision }))).replaceAll("<", "\\u003c");
 ---
 <section class="site-explorer" data-site-explorer>
-  <div class="site-toolbar" aria-label="Candidate filters">
-    <label><span class="control-label">Search</span><input class="control" type="search" placeholder="Name or region" data-site-search disabled={views.length === 0} /></label>
-    <label><span class="control-label">Status</span><select class="control" data-site-status disabled={views.length === 0}><option value="">All statuses</option>{statuses.map((status) => <option value={status}>{status}</option>)}</select></label>
-    <label><span class="control-label">State</span><select class="control" data-site-state disabled={views.length === 0}><option value="">All states</option>{states.map((state) => <option value={state}>{state}</option>)}</select></label>
-    <label><span class="control-label">Evidence</span><select class="control" data-site-evidence disabled={views.length === 0}><option value="">Any evidence</option><option value="evidenced">Has evidenced item</option><option value="blocked">Has blocked item</option></select></label>
-    <button class="site-reset" type="button" data-site-reset disabled={views.length === 0}>Reset</button>
-  </div>
-  <p class="result-count" aria-live="polite" data-site-count>{views.length} candidate location{views.length === 1 ? "" : "s"}</p>
+  {showFilters && <div class="site-toolbar site-toolbar--simple" aria-label="Candidate filters">
+    <label><span class="control-label">Search</span><input class="control" type="search" placeholder="Name or public region" data-site-search /></label>
+    <label><span class="control-label">Stage</span><select class="control" data-site-stage><option value="">All stages</option>{stages.map((stage) => <option value={stage}>{stage}</option>)}</select></label>
+    <button class="site-reset" type="button" data-site-reset>Reset</button>
+  </div>}
+  <p class="result-count" aria-live="polite" data-site-count>{views.length} real candidate record{views.length === 1 ? "" : "s"}</p>
   <div class="site-workspace">
-    <div class="site-map-frame">
-      <div class="site-map" data-site-map role="region" aria-label="Interactive Australian pilot candidate map"></div>
-      <div class="site-map-status" data-site-map-status>Loading map…</div>
-      <script is:inline type="application/json" data-site-marker-data set:html={markerData}></script>
-      {views.length === 0 && <div class="site-map-empty"><p class="mono-label">Candidate register ready</p><strong>No locations added</strong><p>Add a source-linked candidate record when a real lead is ready to screen.</p></div>}
-    </div>
     <div class="site-candidate-panel">
-      <div class="site-candidate-list" data-site-list>
-        {views.length ? views.map((view) => <button type="button" class="site-candidate" data-site-candidate data-id={view.candidate.id} data-name={`${view.candidate.data.title} ${view.location.locality}`.toLowerCase()} data-state={view.location.state} data-status={view.candidate.data.status} data-evidence={view.evidence}>
-          <span><strong>{view.candidate.data.title}</strong><span class="record-meta">{view.location.locality} · {view.location.precision}</span></span>
-          <span><span class:list={["tag", `tag--${view.candidate.data.status}`]}>{view.candidate.data.status}</span><span class="record-meta">{view.evidenced} evidenced · {view.blocked} blocked</span></span>
-        </button>) : <div class="site-list-empty"><p class="mono-label">Nominal pilot</p><strong>300 kW</strong><p>The register accepts exact, locality-level or regional coordinates. Exact private details should remain outside the published collection.</p></div>}
+      <div class="site-candidate-list">
+        {views.length ? views.map((view) => <button type="button" class="site-candidate" data-site-candidate data-id={view.candidate.id} data-name={`${view.candidate.data.title} ${view.location.locality}`.toLowerCase()} data-stage={view.candidate.data.stage}>
+          <span><strong>{view.candidate.data.title}</strong><span class="record-meta">{view.location.locality} · approximate {view.location.precision}</span></span>
+          <span><span class:list={["tag", `tag--${view.candidate.data.stage}`]}>{view.candidate.data.stage}</span>{view.candidate.data.next_action && <span class="record-meta">Next action recorded</span>}</span>
+        </button>) : <div class="site-list-empty"><p class="mono-label">Candidate register</p><strong>No real candidates yet</strong><p>Add the first record only when a source identifies an actual location or electrical configuration worth screening.</p></div>}
       </div>
-      {views.map((view) => <article class="site-drawer" data-site-drawer data-id={view.candidate.id} hidden>
-        <div class="site-drawer__top"><div><p class="mono-label">Candidate detail</p><h2>{view.candidate.data.title}</h2></div><button type="button" class="site-drawer__close" data-site-close aria-label={`Close ${view.candidate.data.title}`}>Close</button></div>
-        <p class="site-drawer__location">{view.location.locality}, {view.location.state} · {view.location.precision} location</p>
-        <div class="site-summary-grid"><div><span>Stage</span><strong>{view.candidate.data.status}</strong></div><div><span>Target</span><strong>{view.candidate.data.target_kw} kW</strong></div><div><span>Mode</span><strong>{view.candidate.data.operating_mode ?? "Unknown"}</strong></div><div><span>Reviewed</span><strong>{dateText(view.candidate.data.reviewed_at)}</strong></div></div>
-        {view.candidate.data.rationale && <section><p class="mono-label">Why it is tracked</p><p>{view.candidate.data.rationale}</p></section>}
-        <section><p class="mono-label">Diligence</p>{Object.keys(view.diligence).length ? <ul class="diligence-list">{Object.entries(view.diligence).map(([key, value]) => <li><span>{diligenceLabels[key] ?? key.replaceAll("_", " ")}</span><span class:list={["tag", `tag--${value}`]}>{value}</span></li>)}</ul> : <p class="empty-state">No diligence states recorded.</p>}</section>
-        {view.hardBlocks.length > 0 && <section><p class="mono-label">Hard blocks</p><ul>{view.hardBlocks.map((item) => <li>{item}</li>)}</ul></section>}
-        {view.questions.length > 0 && <section><p class="mono-label">Open questions</p><ul>{view.questions.map((item) => <li>{item}</li>)}</ul></section>}
+      {views.map((view) => <article class="site-drawer" data-site-drawer data-id={view.candidate.id} hidden tabindex="-1">
+        <div class="site-drawer__top"><div><p class="mono-label">Candidate record</p><h2>{view.candidate.data.title}</h2></div><button type="button" class="site-drawer__close" data-site-close>Close</button></div>
+        <p class="site-drawer__location">{view.location.locality}, {view.location.state} · approximate {view.location.precision}</p>
+        <div class="site-summary-grid"><div><span>Stage</span><strong>{view.candidate.data.stage}</strong></div><div><span>Design case</span><strong>{designCaseKw ? `${designCaseKw} kW` : "Undefined"}</strong></div><div><span>Site capability</span><strong>{view.observations.length ? "See observations" : "Not evidenced"}</strong></div><div><span>Reviewed</span><strong>{dateText(view.candidate.data.reviewed_at)}</strong></div></div>
+        <section><p class="mono-label">Why it is tracked</p><p>{view.candidate.data.rationale}</p></section>
+        {view.observations.length > 0 && <section><p class="mono-label">Sourced capacity observations</p><ul class="capacity-list">{view.observations.map((item) => <li><strong>{item.value_kw} kW</strong><span>{item.measure.replaceAll("-", " ")} · {item.boundary.replaceAll("-", " ")} · {item.basis}</span><small>{item.period_or_condition}</small>{item.source_ids.map((sourceId) => <a href={`${base}sources-timeline/#${sourceId}`}>{sourceById.get(sourceId)?.data.title ?? sourceId}</a>)}</li>)}</ul></section>}
+        <section><p class="mono-label">Six screening checks</p><ul class="diligence-list">{checkAreas.map(([area, label]) => { const check = view.checks.get(area); return <li class="gate-row"><div><strong>{label}</strong>{check?.finding && <p>{check.finding}</p>}{check?.next_action && <p><b>Next:</b> {check.next_action}</p>}<div class="gate-sources">{check?.source_ids?.map((sourceId) => <a href={`${base}sources-timeline/#${sourceId}`}>{sourceById.get(sourceId)?.data.title ?? sourceId}</a>)}</div></div><span><span class:list={["tag", `tag--${check?.status ?? "unknown"}`]}>{check?.status ?? "unknown"}</span>{check?.reviewed_at && <small>{dateText(check.reviewed_at)}</small>}</span></li>})}</ul></section>
         {view.candidate.data.next_action && <section><p class="mono-label">Next action</p><p>{view.candidate.data.next_action}</p></section>}
-        <section><p class="mono-label">Comments</p>{view.comments.length ? <ol class="site-comments">{view.comments.map((comment) => <li><p>{comment.text}</p><span class="record-meta">{comment.author} · {dateText(comment.date)}</span></li>)}</ol> : <p class="empty-state">No comments recorded.</p>}</section>
-        <section><p class="mono-label">Sources</p><div class="site-sources">{view.sourceIds.map((sourceId) => <a href={`${base}sources-timeline/#${sourceId}`}>{sourceById.get(sourceId)?.data.title ?? sourceId}</a>)}</div></section>
+        {view.comments.length > 0 && <section><p class="mono-label">Comments</p><ol class="site-comments">{view.comments.map((comment) => <li><p>{comment.text}</p><span class="record-meta">{comment.author} · {dateText(comment.date)}</span></li>)}</ol></section>}
+        <section><p class="mono-label">Lead sources</p><div class="site-sources">{view.sourceIds.map((sourceId) => <a href={`${base}sources-timeline/#${sourceId}`}>{sourceById.get(sourceId)?.data.title ?? sourceId}</a>)}</div></section>
       </article>)}
+    </div>
+    <div class="site-map-frame">
+      <div class="site-map" data-site-map role="region" aria-label="Approximate public location index"></div>
+      <div class="site-map-status" data-site-map-status>Loading map…</div>
+      <div class="site-map-legend">Schematic public areas · not site boundaries</div>
+      <script is:inline type="application/json" data-site-marker-data set:html={markerData}></script>
+      {views.length === 0 && <div class="site-map-empty"><p class="mono-label">Public location index</p><strong>Waiting for evidence</strong><p>The map becomes useful when the first real lead arrives.</p></div>}
     </div>
   </div>
 </section>
 
 <script>
   import * as L from "leaflet";
-
-  type MarkerData = { id: string; title: string; status: string; locality: string; longitude: number; latitude: number };
+  type MarkerData = { id: string; title: string; stage: string; locality: string; longitude: number; latitude: number; precision: "locality" | "region" };
   const explorer = document.querySelector<HTMLElement>("[data-site-explorer]");
   const container = explorer?.querySelector<HTMLElement>("[data-site-map]");
   if (explorer && container) {
-    const search = explorer.querySelector<HTMLInputElement>("[data-site-search]");
-    const status = explorer.querySelector<HTMLSelectElement>("[data-site-status]");
-    const state = explorer.querySelector<HTMLSelectElement>("[data-site-state]");
-    const evidence = explorer.querySelector<HTMLSelectElement>("[data-site-evidence]");
-    const count = explorer.querySelector<HTMLElement>("[data-site-count]");
-    const mapStatus = explorer.querySelector<HTMLElement>("[data-site-map-status]");
-    const candidates = [...explorer.querySelectorAll<HTMLElement>("[data-site-candidate]")];
-    const drawers = [...explorer.querySelectorAll<HTMLElement>("[data-site-drawer]")];
+    const search = explorer.querySelector<HTMLInputElement>("[data-site-search]"); const stage = explorer.querySelector<HTMLSelectElement>("[data-site-stage]"); const count = explorer.querySelector<HTMLElement>("[data-site-count]");
+    const mapStatus = explorer.querySelector<HTMLElement>("[data-site-map-status]"); const candidates = [...explorer.querySelectorAll<HTMLElement>("[data-site-candidate]")]; const drawers = [...explorer.querySelectorAll<HTMLElement>("[data-site-drawer]")];
     const data = JSON.parse(explorer.querySelector<HTMLScriptElement>("[data-site-marker-data]")?.textContent ?? "[]") as MarkerData[];
-    const map = L.map(container, { center: [-27, 134], zoom: 3, minZoom: 2, maxZoom: 18, zoomControl: true });
-    const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map);
-    tiles.once("load", () => mapStatus?.remove());
-    tiles.on("tileerror", () => { if (mapStatus) { mapStatus.textContent = "Map tiles could not load. Check the network connection."; mapStatus.dataset.error = "true"; } });
-    const markerById = new Map<string, { marker: L.Marker; element: HTMLButtonElement; data: MarkerData }>();
-    const open = (id: string, focus = true) => {
-      drawers.forEach((drawer) => { drawer.hidden = drawer.dataset.id !== id; });
-      candidates.forEach((candidate) => candidate.setAttribute("aria-pressed", String(candidate.dataset.id === id)));
-      markerById.forEach(({ element }, markerId) => element.setAttribute("aria-pressed", String(markerId === id)));
-      const selected = markerById.get(id);
-      if (focus && selected) map.flyTo([selected.data.latitude, selected.data.longitude], Math.max(map.getZoom(), 10), { duration: .7 });
-      explorer.querySelector<HTMLElement>(`[data-site-drawer][data-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
-    };
-    data.forEach((item) => {
-      const element = document.createElement("button");
-      element.type = "button";
-      element.className = `map-candidate-marker map-candidate-marker--${item.status}`;
-      element.setAttribute("aria-label", `Open ${item.title}, ${item.locality}`);
-      element.innerHTML = "<span></span>";
-      element.addEventListener("click", () => open(item.id, false));
-      const icon = L.divIcon({ className: "", html: element, iconSize: [28, 28], iconAnchor: [14, 14] });
-      const marker = L.marker([item.latitude, item.longitude], { icon, title: item.title }).addTo(map);
-      markerById.set(item.id, { marker, element, data: item });
-    });
-    const showAustralia = () => map.fitBounds([[-44, 112], [-10, 154]], { padding: [42, 42], duration: .7 });
-    showAustralia();
-    const filter = () => {
-      const query = search?.value.trim().toLowerCase() ?? "";
-      let visible = 0;
-      candidates.forEach((candidate) => {
-        const show = (!query || candidate.dataset.name?.includes(query)) && (!status?.value || candidate.dataset.status === status.value) && (!state?.value || candidate.dataset.state === state.value) && (!evidence?.value || candidate.dataset.evidence?.split(" ").includes(evidence.value));
-        candidate.hidden = !show;
-        markerById.get(candidate.dataset.id ?? "")?.element.toggleAttribute("hidden", !show);
-        if (show) visible += 1;
-      });
-      if (count) count.textContent = `${visible} candidate location${visible === 1 ? "" : "s"}`;
-    };
-    candidates.forEach((candidate) => candidate.addEventListener("click", () => open(candidate.dataset.id ?? "")));
-    [search, status, state, evidence].forEach((control) => { control?.addEventListener("input", filter); control?.addEventListener("change", filter); });
-    explorer.querySelector("[data-site-reset]")?.addEventListener("click", () => { if (search) search.value = ""; if (status) status.value = ""; if (state) state.value = ""; if (evidence) evidence.value = ""; filter(); showAustralia(); });
-    explorer.querySelectorAll("[data-site-close]").forEach((button) => button.addEventListener("click", () => { drawers.forEach((drawer) => { drawer.hidden = true; }); candidates.forEach((item) => item.removeAttribute("aria-pressed")); markerById.forEach(({ element }) => element.removeAttribute("aria-pressed")); }));
+    const map = L.map(container, { center: [-27, 134], zoom: 3, minZoom: 2, maxZoom: 12 });
+    const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 12 }).addTo(map);
+    tiles.once("load", () => mapStatus?.remove()); tiles.on("tileerror", () => { if (mapStatus) mapStatus.textContent = "Map tiles unavailable. The register remains usable."; });
+    const layers = new Map<string, { layer: L.Circle; data: MarkerData }>();
+    const open = (id: string, focus = true) => { drawers.forEach((drawer) => drawer.hidden = drawer.dataset.id !== id); candidates.forEach((item) => item.setAttribute("aria-pressed", String(item.dataset.id === id))); const selected = layers.get(id); if (focus && selected) map.fitBounds(selected.layer.getBounds(), { maxZoom: selected.data.precision === "region" ? 6 : 9 }); const drawer = explorer.querySelector<HTMLElement>(`[data-site-drawer][data-id="${id}"]`); drawer?.focus(); };
+    data.forEach((item) => { const color = item.stage === "rejected" ? "#b4232a" : item.stage === "shortlisted" ? "#007b47" : "#15295a"; const layer = L.circle([item.latitude, item.longitude], { radius: item.precision === "region" ? 50000 : 8000, color, fillColor: color, fillOpacity: .12 }).addTo(map); layer.bindTooltip(`${item.title} · approximate ${item.precision}`); layer.on("click", () => open(item.id, false)); layers.set(item.id, { layer, data: item }); });
+    map.fitBounds([[-44, 112], [-10, 154]], { padding: [42, 42] });
+    const filter = () => { const query = search?.value.trim().toLowerCase() ?? ""; let visible = 0; candidates.forEach((item) => { const show = (!query || item.dataset.name?.includes(query)) && (!stage?.value || item.dataset.stage === stage.value); item.hidden = !show; const layer = layers.get(item.dataset.id ?? "")?.layer; if (layer) { if (show && !map.hasLayer(layer)) map.addLayer(layer); if (!show && map.hasLayer(layer)) map.removeLayer(layer); } if (show) visible += 1; }); if (count) count.textContent = `${visible} real candidate record${visible === 1 ? "" : "s"}`; };
+    candidates.forEach((item) => item.addEventListener("click", () => open(item.dataset.id ?? ""))); [search, stage].forEach((control) => control?.addEventListener("input", filter)); explorer.querySelector("[data-site-reset]")?.addEventListener("click", () => { if (search) search.value = ""; if (stage) stage.value = ""; filter(); }); explorer.querySelectorAll("[data-site-close]").forEach((button) => button.addEventListener("click", () => drawers.forEach((drawer) => drawer.hidden = true)));
   }
 </script>

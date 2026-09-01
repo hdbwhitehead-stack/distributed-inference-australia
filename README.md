@@ -33,7 +33,7 @@ The shell expects Astro collections named `thesis`, `evidence`, `assumptions`, `
 - Decisions: `id`, `date`, `decision`, `rationale`, `reversible`, `revisit_when`.
 - Research queue: `id`, `question`, `priority`, `category`, `why_it_matters`, `next_action`, `status`.
 
-Workload, site, source and timeline records are intentionally permissive in the shell, so the content schema remains the canonical place for their exact fields.
+Real candidates use six broad screening checks, source-linked capacity observations and approximate public locations. The interface stays deliberately light until real candidate work demonstrates a need for more workflow machinery.
 
 ## Publication boundary
 

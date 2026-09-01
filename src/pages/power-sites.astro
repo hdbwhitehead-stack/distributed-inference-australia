@@ -5,24 +5,39 @@ import CandidateSiteMap from "../components/CandidateSiteMap.astro";
 import Frame from "../components/Frame.astro";
 import PageHeader from "../components/PageHeader.astro";
 import { type ResearchRecord } from "../lib/content";
-const sites = (await getCollection("sites")) as unknown as ResearchRecord[];
+
+const candidates = (await getCollection("sites")) as unknown as ResearchRecord[];
+const decisions = (await getCollection("decisions")) as unknown as ResearchRecord[];
 const sources = (await getCollection("sources")) as unknown as ResearchRecord[];
-const frameworks = sites.filter((record) => record.data.record_type === "screening-framework");
-const candidates = sites.filter((record) => record.data.record_type === "candidate");
-const conditions = [
-  ["Electrical placement", "Is local load on the correct side of the actual binding constraint and metering boundary?"],
-  ["Five-minute shape", "What power is available at the proposed load level, including ramps, duration and correlation?"],
-  ["Connection headroom", "What do the executed agreement, single-line diagram, transformer and protection settings permit?"],
-  ["Firming and imports", "Can the site import, who pays, and what protected customer load must survive a cheap-power loss?"],
-  ["Fibre and operations", "Are route diversity, model movement, cooling and remote-hands arrangements adequate for the intended service class?"],
-  ["Counterparty and change", "What changes after transmission upgrades, maintenance, altered curtailment or a generator dispute?"]
+const designCase = decisions.find((record) => record.data.id === "decision-pilot-one-rack-design-case");
+const load = designCase?.data.design_case as { rack_platform: string; rack_power_kw_low: number; rack_power_kw_high: number; pue: number; calculated_facility_kw_low: number; calculated_facility_kw_high: number; screening_envelope_kw: number; input_confidence: string } | undefined;
+const checks = [
+  ["Connection and boundary", "Where does the load sit electrically, and what do the agreement, transformer, protection and import limits actually permit?"],
+  ["Usable energy shape", "What five-minute power is usable after ramps, interruptions, duration, recovery and ordinary intermittency?"],
+  ["Delivered economics and value", "Does local physical value reach the operator after retail, network, losses, metering and contract terms?"],
+  ["Fibre and latency", "Is there a credible route, price, latency and management path for the intended service?"],
+  ["Thermal, physical and planning", "Can the facility cool, energise, operate and obtain access or approvals across real conditions?"],
+  ["Counterparty, operations and security", "Can the relationships, controls, remote hands, model custody and failure responsibilities be underwritten?"],
 ];
 ---
 <BaseLayout title="Power and sites" wide={true}>
-  <PageHeader eyebrow="Power and site screening" title={'Cheap power is useful only when the <span class="marker">constraint is local</span>.'} lede="Regional curtailment and negative-price statistics are screening signals. A viable site needs its own electrical, power-shape, fibre and operating evidence." meta={`${candidates.length} candidate site record${candidates.length === 1 ? "" : "s"} · 300 kW nominal pilot`} />
-  <Frame ticks={true}><div class="frame__body"><p class="mono-label">Screening rule</p><h2>A map is a research index, not a viability claim</h2><p class="lede">A local load can only capture a benefit if it is electrically placed at the binding point. Candidate markers preserve leads, evidence gaps and rejected assumptions; they do not replace the connection agreement, single-line diagram or five-minute trace.</p></div></Frame>
-  <div class="section-heading"><h2>Candidate-site explorer</h2><span>300 kW nominal target · empty is valid</span></div>
-  <CandidateSiteMap candidates={candidates} sources={sources} />
-  <div class="section-heading"><h2>Required underwriting conditions</h2><span>{frameworks.length} screening framework</span></div>
-  <div class="detail-grid">{conditions.map(([title, description]) => <section><p class="mono-label">{title}</p><p>{description}</p></section>)}</div>
+  <PageHeader eyebrow="Power and site screening" title={'A location enters the register only when <span class="marker">evidence can follow it</span>.'} lede="A simple research notebook for candidate locations. Regional power signals can originate a lead; they cannot establish site capability or pilot readiness." meta={`${candidates.length} real candidate record${candidates.length === 1 ? "" : "s"} · ${load?.screening_envelope_kw ?? "undefined"} kW design case`} />
+
+  {load && <section class="design-case-panel">
+    <div class="design-case-formula" aria-label="Pilot design case calculation">
+      <div><span>Rack estimate</span><strong>{load.rack_power_kw_low}–{load.rack_power_kw_high} kW</strong><small>{load.rack_platform} · {load.input_confidence} confidence</small></div>
+      <b>×</b><div><span>PUE assumption</span><strong>{load.pue}</strong><small>Open project assumption</small></div>
+      <b>=</b><div><span>Facility load</span><strong>{load.calculated_facility_kw_low}–{load.calculated_facility_kw_high} kW</strong><small>Calculated, not measured</small></div>
+      <b>→</b><div class="design-case-result"><span>Screening envelope</span><strong>{load.screening_envelope_kw} kW</strong><small>Rounded planning case</small></div>
+    </div>
+    <p class="design-case-caption">External input → project assumption → arithmetic → reversible decision. This is not a site's import capability, expected draw or customer reservation.</p>
+  </section>}
+
+  <div class="section-heading"><h2>Candidate register and location index</h2><span>Empty is valid</span></div>
+  <CandidateSiteMap candidates={candidates} sources={sources} designCase={designCase} />
+
+  <div class="section-heading"><h2>Six questions before a shortlist</h2><span>Broad checks · evidence decides</span></div>
+  <div class="screening-questions">{checks.map(([title, question]) => <section><p class="mono-label">{title}</p><p>{question}</p></section>)}</div>
+
+  <Frame ticks={true}><div class="frame__body scope-note"><div><p class="mono-label">Program boundary</p><h2>A good site does not make a ready pilot</h2></div><p>Customer commitments, control-plane recovery, firm reserve, security, equipment terms and accepted-work economics remain project-level gates in PROJECT_STATE and the research queue. The map should not try to certify them.</p></div></Frame>
 </BaseLayout>
