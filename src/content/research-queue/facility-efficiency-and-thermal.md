@@ -9,10 +9,11 @@ why_it_matters: >-
   Design efficiency can diverge from actual operation, and intermittent compute
   may move cooling and power equipment away from its efficient operating range.
 next_action: >-
-  Obtain interval facility and IT energy, ambient conditions, cooling limits,
-  backup-fuel use and maintenance data from candidate facilities; define pilot
-  metering compatible with the NABERS operating boundaries.
-status: queued
+  Ask DBO1 Dubbo and PH1 Port Hedland first for supported rack-level electrical
+  and thermal density and liquid-cooling options; if either passes, obtain
+  interval facility and IT energy, ambient conditions, cooling limits, backup
+  fuel use and maintenance data.
+status: in-progress
 related_theses:
   - thesis-distributed-inference-au
 related_assumptions:
@@ -21,7 +22,13 @@ related_assumptions:
 source_ids:
   - source-nabers-energy-data-centres
   - source-aemo-connection-process-overview
-updated_at: 2026-08-29
+  - source-leading-edge-dbo1-facility
+  - source-nextdc-ph1-facility
+updated_at: 2026-09-03
 ---
 
-Report energy per accepted completed workload as well as PUE.
+Both candidates advertise conventional aisle-based cooling but neither publicly
+states a per-rack heat-rejection limit or liquid-cooling support. Aggregate
+site or module capacity therefore cannot answer whether the reference rack is
+physically compatible. Report energy per accepted completed workload as well as
+PUE if a candidate passes the density screen.

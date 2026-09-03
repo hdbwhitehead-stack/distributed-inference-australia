@@ -9,18 +9,22 @@ why_it_matters: >-
   The headline MW figure does not establish usable energy, capturable
   curtailment, import rights or an economically useful operating envelope.
 next_action: >-
-  Obtain the connection agreement, single-line diagram, interval data,
-  constraint context, metering boundary and import capability for each screened
-  site.
-status: queued
+  Send a common screening request to DBO1 Dubbo and PH1 Port Hedland for offered
+  rack-level capacity, connection and metering boundaries, single-line diagrams,
+  transformer and protection data, interval energy and import conditions.
+status: in-progress
 related_theses:
   - thesis-distributed-inference-au
 related_assumptions:
   - assumption-local-load-captures-value
 source_ids:
   - source-distributed-inference-australia-handoff
-updated_at: 2026-08-29
+  - source-leading-edge-dbo1-facility
+  - source-nextdc-ph1-facility
+updated_at: 2026-09-03
 ---
 
-The source handoff advises screening 10–20 sites down to two detailed
-candidates, using actual data rather than regional proxies.
+DBO1 Dubbo and PH1 Port Hedland are the first two real screening candidates.
+Their public capacity descriptions originate the enquiries but do not answer
+this question because neither establishes a contractible allocation at a stated
+electrical boundary.

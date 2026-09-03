@@ -1,6 +1,6 @@
 # Distributed Inference Australia — project state
 
-**Last updated:** 01/09/2026
+**Last updated:** 03/09/2026
 
 **Status:** Research and structured feasibility
 
@@ -29,6 +29,13 @@ centre or claim that a specific Australian site is viable.
 No investment or deployment conclusion has been reached. The immediate goal is
 to replace broad market plausibility with site-specific, customer-specific and
 contract-specific evidence.
+
+Two real facilities now warrant direct screening: Leading Edge DBO1 in Dubbo
+and NEXTDC PH1 in Port Hedland. Both are existing regional colocation sites with
+public power, cooling, fibre and operating claims. They are **screening
+candidates, not shortlisted sites**. Neither has evidenced spare capacity,
+rack-level high-density feasibility, five-minute energy shape or commercial
+terms for this project.
 
 The current thesis has medium confidence and remains in testing. Its most
 credible initial form is a fleet of small, quickly energised, mostly firm or
@@ -65,7 +72,8 @@ defensible business or an investable site.
 ## What remains unproven
 
 - No generator or compute site has passed detailed electrical and commercial
-  diligence.
+  diligence. DBO1 Dubbo and PH1 Port Hedland are at screening stage only; their
+  public nameplate figures are not evidence of contractible capacity.
 - No paying Australian design partner has committed a measured workload,
   completion window, reservation or prepayment.
 - No supply or co-location term sheet has shown how local physical value reaches
@@ -167,8 +175,10 @@ dependence on hardware residual value.
 
 ## Recommended next work
 
-1. Build the site-screening data request and scorecard, identify 10–20 plausible
-   sites and obtain detailed evidence for two candidates.
+1. Send the same short diligence request to DBO1 Dubbo and PH1 Port Hedland,
+   beginning with available rack-level power and cooling, then obtain electrical
+   boundaries, interval energy, commercial terms and fibre tests. Reject quickly
+   if either cannot support the required rack density.
 2. Run structured customer discovery and seek three paying design partners with
    workload traces and explicit commercial commitments.
 3. Build the completed-work co-dispatch model and competitor/substitute pricing
